@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2>Persönlicher Bereich</h2>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <fieldset style="border:0;border-top:1px solid #eee;margin-top:8px;padding-top:8px">
+      <legend><b>Login</b></legend>
+      {{ form.email_readonly.label_tag }} {{ form.email_readonly }}
+      <p class="muted">Die Login-E-Mail kann nur durch einen Administrator geändert werden.</p>
+    </fieldset>
+
+    <fieldset style="border:0;border-top:1px solid #eee;margin-top:8px;padding-top:8px">
+      <legend><b>Stammdaten</b></legend>
+      <div>Vorname {{ form.first_name }}</div>
+      <div>Nachname {{ form.last_name }}</div>
+      <div>Straße {{ form.street }}</div>
+      <div>Hausnummer {{ form.house_no }}</div>
+      <div>PLZ {{ form.zip_code }}</div>
+      <div>Ort {{ form.city }}</div>
+      <div>Telefon {{ form.phone }}</div>
+    </fieldset>
+
+    <fieldset style="border:0;border-top:1px solid #eee;margin-top:8px;padding-top:8px">
+      <legend><b>Bankverbindung</b></legend>
+      <div>Kontoinhaber {{ form.account_holder }}</div>
+      <div>IBAN {{ form.iban }}</div>
+      <div>BIC {{ form.bic }}</div>
+      <div>Bank {{ form.bank_name }}</div>
+    </fieldset>
+
+    <fieldset style="border:0;border-top:1px solid #eee;margin-top:8px;padding-top:8px">
+      <legend><b>Unterschrift</b></legend>
+      <div>{{ form.signature_image }}</div>
+      <p class="muted">Hier kannst du eine Bilddatei deiner Unterschrift (JPG/PNG) hochladen.</p>
+    </fieldset>
+
+    <fieldset style="border:0;border-top:1px solid #eee;margin-top:8px;padding-top:8px">
+      <legend><b>Funktionen im Verband</b></legend>
+      <div>{{ form.function_1 }}</div>
+      <div>{{ form.function_2 }}</div>
+      <div>{{ form.function_3 }}</div>
+      <div>{{ form.function_4 }}</div>
+      <div>{{ form.function_5 }}</div>
+    </fieldset>
+
+    <button style="margin-top:12px">Speichern</button>
+  </form>
+</div>
+{% endblock %}

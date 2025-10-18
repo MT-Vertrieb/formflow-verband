@@ -27,14 +27,15 @@
 </head>
 <body>
   <header>
-    <button class="nav" onclick="toggleSidebar()">☰</button>
-    <div style="font-weight:700;letter-spacing:.2px">{{ ORG_NAME }}</div>
-    <div class="muted" style="margin-left:auto;">Phase 0</div>
-  </header>
+  <div style="font-weight:700;letter-spacing:.2px">FormFlow-Verband 2.0</div>
+  <!-- rechter Platzhalter entfernt: 'Phase 0' war hier -->
+</header>
   <div id="sidebar" class="sidebar">
     <a class="item" href="/">🏠 Dashboard</a>
+    <a class="item" href="/accounts/profile/">👤 Persönlicher Bereich</a>
     <a class="item" href="/settingsmgr/">⚙️ Einstellungen</a>
     <a class="item" href="/finance/import/">💾 CSV-Import (Haushaltsplan)</a>
+    <a class="item" href="/finance/overview/">📊 Haushaltsplan-Übersicht</a>
     <a class="item" href="/settingsmgr/smtp-test/">✉️ SMTP-Test</a>
     <a class="item" href="/admin/">🔐 Admin</a>
     <a class="item" href="/accounts/logout/">🚪 Logout</a>

@@ -1,14 +1,14 @@
-
+# Python / venv
+env/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.sqlite3
-*.db
-env/
-.env
+
+# Django
+db.sqlite3
 media/
 staticfiles/
-.DS_Store
-node_modules/
 *.log
+
+# IDE
+.vscode/
+.idea/

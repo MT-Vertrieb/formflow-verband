@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>CSV-Import (Haushaltsplan)</h3>
+  <p><b>Wichtig:</b> Die Datei muss <b>Semikolon</b>-getrennt sein (<code>;</code>).</p>
+
+  <h4>Begriffe</h4>
+  <ul>
+    <li><b>Kostenstelle (KS)</b>: z. B. <code>100 – Präsidium</code></li>
+    <li><b>Kostencluster (Cluster)</b>: z. B. <code>101 – Präsente</code>, gehört zur KS <code>100</code></li>
+  </ul>
+
+  <h4>CSV-Formate</h4>
+  <ul>
+    <li><b>Kostenstellen (KS):</b> Spalten <code>code;name</code><br>
+<pre style="margin:6px 0">code;name
+100;Präsidium
+200;Geschäftsstelle
+</pre>
+    </li>
+    <li><b>Kostencluster (Cluster):</b> Spalten <code>code;name;costcenter_code</code> (letzte Spalte = zugehörige KS)<br>
+<pre style="margin:6px 0">code;name;costcenter_code
+101;Präsente;100
+102;Sitzungen;100
+103;Miete;200
+104;Bürobedarf;200
+</pre>
+    </li>
+  </ul>
+
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload starten</button>
+  </form>
+
+  <p class="muted" style="margin-top:8px">
+    Reihenfolge: zuerst <b>Kostenstellen</b> importieren (Jahr), dann <b>Kostencluster</b> mit Verweis auf die KS.
+  </p>
+</div>
+
+{% if preview %}
+<div class="card" style="margin-top:12px">
+  <h4>Vorschau (erste 10 Zeilen)</h4>
+  <pre>{{ preview|safe }}</pre>
+  <p>Zum Übernehmen erneut hochladen und <b>Testlauf</b> abwählen. Achtung: Der Import <b>überschreibt</b> die bestehenden Einträge des Jahres.</p>
+</div>
+{% endif %}
+{% endblock %}

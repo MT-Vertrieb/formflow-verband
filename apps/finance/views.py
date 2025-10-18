@@ -2,11 +2,15 @@ import csv, io, re
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
+from django.db.models import Prefetch
+
 from .forms import CSVUploadForm
 from .models import CostCenter, CostCluster
 
+
 def admin_required(user):
     return user.is_superuser
+
 
 @login_required
 @user_passes_test(admin_required)
@@ -50,6 +54,7 @@ def import_csv(request):
                 return render(request, 'finance/import.html', {'form': form})
 
             if not testlauf:
+                # destruktives Überschreiben je Jahr und Art
                 if kind == 'costcenters':
                     CostCenter.objects.filter(year=year).delete()
                 else:
@@ -72,6 +77,7 @@ def import_csv(request):
                         messages.error(request, f"Ungültige Kostenstelle (nur Ziffern): {cc_code}")
                         return render(request, 'finance/import.html', {'form': form})
                     if not testlauf:
+                        # sicherstellen, dass die Kostenstelle existiert
                         cc, _ = CostCenter.objects.get_or_create(
                             year=year, code=cc_code, defaults={'name': f'CC {cc_code}'}
                         )
@@ -87,3 +93,43 @@ def import_csv(request):
         else:
             ctx['form'] = form
     return render(request, 'finance/import.html', ctx)
+
+
+@login_required
+@user_passes_test(admin_required)
+def overview_by_year(request):
+    """
+    Übersicht: Jahr -> Kostenstellen -> zugehörige Cluster
+    Zeigt, ob die Zuordnung aus dem Import korrekt ist.
+    """
+    years = sorted(CostCenter.objects.values_list('year', flat=True).distinct())
+    selected = request.GET.get('year')
+
+    if years:
+        if selected is None:
+            selected = years[-1]  # jüngstes Jahr als Default
+        else:
+            try:
+                selected = int(selected)
+            except ValueError:
+                selected = years[-1]
+    else:
+        selected = None
+
+    centers = []
+    if selected is not None:
+        centers = (
+            CostCenter.objects
+            .filter(year=selected)
+            .order_by('code')
+            .prefetch_related(
+                Prefetch('clusters', queryset=CostCluster.objects.filter(year=selected).order_by('code'))
+            )
+        )
+
+    ctx = {
+        'years': years,
+        'selected_year': selected,
+        'centers': centers,
+    }
+    return render(request, 'finance/overview.html', ctx)

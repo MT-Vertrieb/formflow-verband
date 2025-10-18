@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Haushaltsplan – Übersicht</h3>
+
+  <form method="get" style="margin:8px 0;">
+    <label>Jahr:&nbsp;</label>
+    <select name="year" onchange="this.form.submit()">
+      {% for y in years %}
+        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if not years %}
+    <p class="muted">Noch keine Daten importiert. Bitte zuerst CSVs importieren.</p>
+  {% else %}
+    {% if centers %}
+      {% for cc in centers %}
+        <div style="margin-top:12px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fff">
+          <div style="font-weight:600;">
+            Kostenstelle (KS): {{ cc.code }} – {{ cc.name }}
+          </div>
+          <div class="muted" style="font-size:12px;margin-top:2px">
+            Zugeordnete Kostencluster (Cluster):
+          </div>
+          <ul style="margin:6px 0 0 16px;">
+            {% for cl in cc.clusters.all %}
+              <li>Cluster {{ cl.code }} – {{ cl.name }} <span class="muted">(KS {{ cc.code }})</span></li>
+            {% empty %}
+              <li class="muted">Keine Cluster für diese Kostenstelle im Jahr {{ selected_year }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">Für das Jahr {{ selected_year }} sind keine Kostenstellen vorhanden.</p>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
