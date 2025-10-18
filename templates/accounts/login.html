@@ -1,0 +1,15 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:420px">
+  <h2>Anmeldung</h2>
+  <form method="post">{% csrf_token %}
+    <label>E-Mail</label>
+    <input type="text" name="username" class="form-control" style="width:100%;padding:8px;margin:6px 0">
+    <label>Passwort</label>
+    <input type="password" name="password" class="form-control" style="width:100%;padding:8px;margin:6px 0">
+    <button style="margin-top:8px" type="submit">Einloggen</button>
+  </form>
+  <p class="muted" style="margin-top:8px">Noch kein Konto? <a href="/accounts/register/">Registrieren</a></p>
+</div>
+{% endblock %}

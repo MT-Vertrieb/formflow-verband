@@ -1,0 +1,52 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h2>Einstellungen</h2>
+<div class="card">
+  <h3>Allgemein</h3>
+  <form method="post">{% csrf_token %}
+    {{ gen_form.as_p }}
+    <button name="save_general">Speichern</button>
+  </form>
+</div>
+<div class="card" style="margin-top:12px">
+  <h3>Theme</h3>
+  <form method="post">{% csrf_token %}
+    {{ theme_form.as_p }}
+    <button name="save_theme">Speichern</button>
+  </form>
+</div>
+<div class="card" style="margin-top:12px">
+  <h3>E-Mail-Zieladressen</h3>
+  <form method="post">{% csrf_token %}
+    {{ emails_form.as_p }}
+    <small class="muted">Mehrere Adressen durch Semikolon trennen.</small><br>
+    <button name="save_emails">Speichern</button>
+  </form>
+</div>
+<div class="card" style="margin-top:12px">
+  <h3>SharePoint</h3>
+  <form method="post">{% csrf_token %}
+    {{ sp_form.as_p }}
+    <button name="save_sp">Speichern</button>
+  </form>
+</div>
+<div class="card" style="margin-top:12px">
+  <h3>Kilometersätze</h3>
+  <form method="post" style="display:flex;gap:12px;align-items:flex-end">{% csrf_token %}
+    {{ rate_form.km_from.label_tag }} {{ rate_form.km_from }}
+    {{ rate_form.km_to.label_tag }} {{ rate_form.km_to }}
+    {{ rate_form.rate.label_tag }} {{ rate_form.rate }}
+    <button name="add_rate">Hinzufügen</button>
+  </form>
+  <ul>{% for r in rates %}<li>{{ r.km_from }}–{{ r.km_to|default:"∞" }} km → {{ r.rate }} €</li>{% empty %}<li class="muted">Keine Einträge</li>{% endfor %}</ul>
+</div>
+<div class="card" style="margin-top:12px">
+  <h3>Haushaltsjahre</h3>
+  <form method="post" style="display:flex;gap:12px;align-items:flex-end">{% csrf_token %}
+    {{ year_form.year.label_tag }} {{ year_form.year }}
+    <button name="add_year">Hinzufügen</button>
+  </form>
+  <ul>{% for y in years %}<li>{{ y.year }}</li>{% empty %}<li class="muted">Keine Jahre angelegt</li>{% endfor %}</ul>
+</div>
+{% endblock %}

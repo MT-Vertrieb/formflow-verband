@@ -1,0 +1,16 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:520px">
+  <h2>Registrieren</h2>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>Vorname {{ form.first_name }}</div>
+    <div>Nachname {{ form.last_name }}</div>
+    <div>E-Mail {{ form.email }}</div>
+    <div>Passwort {{ form.password }}</div>
+    <button style="margin-top:8px">Registrieren</button>
+  </form>
+  <p class="muted">Ein Admin muss deinen Zugang freigeben.</p>
+</div>
+{% endblock %}
