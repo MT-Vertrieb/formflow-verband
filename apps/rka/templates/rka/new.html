@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Reisekostenantrag – Neu (Test)</h3>
+
+  <form method="post">
+    {% csrf_token %}
+    <label>Entscheider Nr. 1 (Funktion):</label>
+    <select name="step1_function" required>
+      <option value="">-- bitte wählen --</option>
+      {% for f in functions %}
+        <option value="{{ f.id }}">{{ f.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="margin-left:8px;">Antrag anlegen</button>
+  </form>
+  <p class="muted" style="margin-top:8px;">
+    Hinweis: Schritte 2–5 kommen aus „Einstellungen → Module approval configs (RKA)“. Leere Schritte werden übersprungen.
+  </p>
+</div>
+{% endblock %}

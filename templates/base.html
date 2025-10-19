@@ -31,18 +31,19 @@
   <!-- rechter Platzhalter entfernt: 'Phase 0' war hier -->
 </header>
   <div id="sidebar" class="sidebar">
-    <a class="item" href="/">🏠 Dashboard</a>
-    <a class="item" href="/accounts/profile/">👤 Persönlicher Bereich</a>
-    <a class="item" href="/settingsmgr/">⚙️ Einstellungen</a>
-    <a class="item" href="/finance/import/">💾 CSV-Import (Haushaltsplan)</a>
-    <a class="item" href="/finance/overview/">📊 Haushaltsplan-Übersicht</a>
-    <a class="item" href="/settingsmgr/smtp-test/">✉️ SMTP-Test</a>
-    <a class="item" href="/admin/">🔐 Admin</a>
-    <a class="item" href="/accounts/logout/">🚪 Logout</a>
-  </div>
-  <div class="content">
-    {% block content %}{% endblock %}
-  </div>
+  <a class="item" href="/">Dashboard</a>
+  <a class="item" href="/accounts/profile/">Persönlicher Bereich</a>
+  <a class="item" href="/finance/overview/">Haushaltsplan</a>
+  <a class="item" href="/rka/new/">Reisekostenantrag (Test)</a>
+  <a class="item" href="/finance/import/">CSV-Import (Haushaltsplan)</a>
+  <a class="item" href="/settingsmgr/smtp-test/">SMTP-Test</a>
+  <a class="item" href="/settingsmgr/">⚙️ Einstellungen</a>
+  <a class="item" href="/admin/">🔐 Admin</a>
+  <a class="item" href="/accounts/logout/">🚪 Logout</a>
+</div>
+<div class="content">
+  {% block content %}{% endblock %}
+</div>
   <script>
     function toggleSidebar(){
       const sb=document.getElementById('sidebar');

@@ -10,6 +10,7 @@ urlpatterns = [
     path('settingsmgr/', include('apps.settingsmgr.urls')),
     path('finance/', include('apps.finance.urls')),
     path('', TemplateView.as_view(template_name='core/dashboard.html'), name='dashboard'),
+    path("rka/", include("apps.rka.urls")),
 ]
 
 # Media (Uploads) in der Entwicklung ausliefern
