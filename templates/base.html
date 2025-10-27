@@ -1,55 +1,267 @@
-
-{% load static %}
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <title>{% block title %}Intranet{% endblock %}</title>
+  {% load static %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ ORG_NAME }}</title>
+
   <style>
     :root{
-      --primary: {{ THEME_COLORS.primary }};
-      --accent: {{ THEME_COLORS.accent }};
-      --sidebar: {{ THEME_COLORS.sidebar }};
-      --text: {{ THEME_COLORS.text }};
+      --sb-width-collapsed: 64px;
+      --sb-width-expanded: 260px;
+      --sb-bg: #0f141a;
+      --sb-fg: #cfd8e3;
+      --sb-fg-dim: #9aa7b5;
+      --sb-border: rgba(255,255,255,.08);
+      --sb-accent: #3b82f6;
+      --content-bg: #f6f7fb;
     }
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;color:var(--text);background:var(--accent);}
-    header{background:var(--primary);color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;}
-    .sidebar{position:fixed;top:56px;left:0;height:calc(100vh - 56px);width:64px;background:var(--sidebar);color:white;transition:width .2s;overflow:hidden;}
-    .sidebar.open{width:220px;}
-    .sidebar .item{padding:12px 16px;display:block;color:white;text-decoration:none;white-space:nowrap;}
-    .content{margin-left:64px;transition:margin-left .2s;padding:16px;}
-    .sidebar.open + .content{margin-left:220px;}
-    button.nav{background:transparent;border:1px solid rgba(255,255,255,.5);color:white;padding:6px 10px;border-radius:6px;cursor:pointer;}
-    .card{background:white;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:16px;}
-    .muted{opacity:.7}
+
+    html, body { height:100%; }
+    body{
+      margin:0;
+      display:flex;
+      min-height:100%;
+      background:var(--content-bg);
+      color:#111;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+
+    /* ===== Sidebar ===== */
+    .sidebar{
+      position:sticky; top:0; left:0;
+      height:100dvh;
+      width:var(--sb-width-collapsed);
+      background:var(--sb-bg);
+      color:var(--sb-fg);
+      border-right:1px solid var(--sb-border);
+      transition: width .2s ease;
+      z-index:1000;
+      display:flex; flex-direction:column;
+      overflow:hidden;
+    }
+
+    .sidebar .brand{
+      display:flex; align-items:center; gap:.6rem;
+      padding:.9rem .9rem;
+      white-space:nowrap;
+    }
+    .sidebar .brand .logo{
+      width:28px; height:28px; border-radius:6px;
+      background:var(--sb-accent);
+      box-shadow:0 0 0 2px rgba(59,130,246,.25) inset;
+    }
+    .sidebar .brand .title{
+      opacity:0; transition:opacity .18s ease;
+    }
+
+    .sidebar nav{
+      padding:.3rem .3rem 1rem;
+      overflow-y:auto; overflow-x:hidden;
+      scrollbar-width:thin;
+    }
+    .nav-item{
+      display:flex; align-items:center; gap:.9rem;
+      padding:.55rem .75rem;
+      color:var(--sb-fg);
+      text-decoration:none;
+      border-radius:10px;
+      margin:.15rem .35rem;
+      white-space:nowrap;
+    }
+    .nav-item:hover{ background:rgba(255,255,255,.06); }
+    .nav-item .icon{ width:20px; height:20px; flex:0 0 20px; opacity:.95; }
+    .nav-item .label{ opacity:0; transition:opacity .18s ease; }
+
+    /* ===== Content ===== */
+    .content{
+      flex:1 1 auto;
+      min-width:0;
+      padding:20px;
+      max-width:100%;
+      transition: margin-left .2s ease;
+    }
+
+    /* ===== Desktop: Hover klappt auf (kein Klick) ===== */
+    @media (hover:hover) and (pointer:fine){
+      .sidebar:hover{ width:var(--sb-width-expanded); }
+      .sidebar:hover .brand .title,
+      .sidebar:hover .nav-item .label{ opacity:1; }
+    }
+
+    /* ===== Mobile: Toggle (Tap) ===== */
+    @media (max-width:1024px){
+      body{ overflow-x:hidden; }
+      .sidebar{
+        position:fixed; transform:translateX(-100%);
+        width:var(--sb-width-expanded);
+        transition: transform .22s ease;
+      }
+      .sidebar.is-open{ transform:translateX(0); }
+      .sidebar .brand .title,
+      .sidebar .nav-item .label{ opacity:1; }
+
+      .sidebar-toggle{
+        position:fixed; left:.6rem; top:.6rem; z-index:1100;
+        background:#fff; color:#111;
+        border:1px solid #e5e7eb; border-radius:10px;
+        padding:.5rem .65rem; line-height:1; cursor:pointer;
+        box-shadow:0 2px 10px rgba(0,0,0,.06);
+      }
+      .backdrop{
+        position:fixed; inset:0; z-index:900;
+        background:rgba(0,0,0,.35);
+        opacity:0; pointer-events:none; transition:opacity .22s ease;
+      }
+      .backdrop.is-open{ opacity:1; pointer-events:auto; }
+    }
+
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
 </head>
 <body>
-  <header>
-  <div style="font-weight:700;letter-spacing:.2px">FormFlow-Verband 2.0</div>
-  <!-- rechter Platzhalter entfernt: 'Phase 0' war hier -->
-</header>
-  <div id="sidebar" class="sidebar">
-  <a class="item" href="/">Dashboard</a>
-  <a class="item" href="/accounts/profile/">Persönlicher Bereich</a>
-  <a class="item" href="/finance/overview/">Haushaltsplan</a>
-  <a class="item" href="/rka/new/">Reisekostenantrag (Test)</a>
-  <a class="item" href="/finance/import/">CSV-Import (Haushaltsplan)</a>
-  <a class="item" href="/settingsmgr/smtp-test/">SMTP-Test</a>
-  <a class="item" href="/settingsmgr/">⚙️ Einstellungen</a>
-  <a class="item" href="/admin/">🔐 Admin</a>
-  <a class="item" href="/accounts/logout/">🚪 Logout</a>
-</div>
-<div class="content">
-  {% block content %}{% endblock %}
-</div>
+
+  <!-- Mobile Toggle + Backdrop (auf Desktop unsichtbar via CSS) -->
+  <button class="sidebar-toggle" aria-controls="sidebar" aria-expanded="false">
+    ☰ <span class="sr-only">Menü</span>
+  </button>
+  <div class="backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- ===== Sidebar ===== -->
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Hauptmenü">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="title">Intranet</span>
+    </div>
+
+    <nav>
+      <!-- Dashboard -->
+      <a class="nav-item" href="">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+        </svg>
+        <span class="label">Dashboard</span>
+      </a>
+
+      <!-- Persönlicher Bereich -->
+      <a class="nav-item" href="/accounts/profile/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/>
+        </svg>
+        <span class="label">Persönlicher Bereich</span>
+      </a>
+
+      <!-- Haushaltsplan -->
+      <a class="nav-item" href="/finance/overview/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3 5h18v4H3V5zm0 6h18v8H3v-8zm2 2v4h14v-4H5z"/>
+        </svg>
+        <span class="label">Haushaltsplan</span>
+      </a>
+
+      <!-- Reisekostenantrag (Test) -->
+      <a class="nav-item" href="/rka/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M4 4h16v2H4V4zm0 6h16v2H4v-2zm0 6h10v2H4v-2z"/>
+        </svg>
+        <span class="label">Reisekostenantrag (Test)</span>
+      </a>
+
+      <!-- CSV-Import (Haushaltsplan) -->
+      <a class="nav-item" href="/finance/import/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19 7v4H5V7H3v10h18V7h-2zM7 5h10v2H7zM9 13h6v2H9z"/>
+        </svg>
+        <span class="label">CSV-Import (Haushaltsplan)</span>
+      </a>
+
+      <!-- SMTP-Test -->
+      <a class="nav-item" href="/settingsmgr/smtp-test/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M2 4h20v16H2V4zm2 2v2l8 5 8-5V6H4z"/>
+        </svg>
+        <span class="label">SMTP-Test</span>
+      </a>
+
+      <!-- Einstellungen -->
+      <a class="nav-item" href="/settingsmgr/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19.14 12.94a7.96 7.96 0 0 0 .06-1 7.96 7.96 0 0 0-.06-1l2.03-1.58-1.92-3.32-2.39.96a8.1 8.1 0 0 0-1.73-1l-.36-2.54H9.23l-.36 2.54c-.6.23-1.18.55-1.72.95l-2.4-.95L2.83 9.36 4.86 10.94a7.96 7.96 0 0 0-.06 1c0 .34.02.67.06 1l-2.03 1.58 1.92 3.32 2.39-.96c.54.4 1.12.73 1.72.96l.36 2.54h5.38l.36-2.54c.6-.23 1.18-.55 1.72-.95l2.4.95 1.92-3.32-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+        </svg>
+        <span class="label">⚙️ Einstellungen</span>
+      </a>
+
+      <!-- Admin -->
+      <a class="nav-item" href="/admin/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4.18L18.09 7 12 9.82 5.91 7 12 5.18z"/>
+        </svg>
+        <span class="label">🔐 Admin</span>
+      </a>
+
+      <!-- Logout -->
+      <a class="nav-item" href="/accounts/logout/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M10 17v-2h4v-2h-4V9l-5 4 5 4zm9 4H11v-2h8V5h-8V3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/>
+        </svg>
+        <span class="label">🚪 Logout</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== Inhalt ===== -->
+  <main id="content" class="content">
+    {% block content %}{% endblock %}
+  </main>
+
   <script>
-    function toggleSidebar(){
-      const sb=document.getElementById('sidebar');
-      sb.classList.toggle('open');
-      document.querySelector('.content').classList.toggle('open');
-    }
+    (function(){
+      var sidebar = document.getElementById('sidebar');
+      var toggle  = document.querySelector('.sidebar-toggle');
+      var backdrop= document.getElementById('sidebar-backdrop');
+
+      function isTouch(){
+        return window.matchMedia('(hover: none), (pointer: coarse)').matches;
+      }
+      function open(){
+        sidebar.classList.add('is-open');
+        backdrop.classList.add('is-open');
+        toggle && toggle.setAttribute('aria-expanded','true');
+        sidebar.setAttribute('tabindex','-1');
+        sidebar.focus({preventScroll:true});
+      }
+      function close(){
+        sidebar.classList.remove('is-open');
+        backdrop.classList.remove('is-open');
+        toggle && toggle.setAttribute('aria-expanded','false');
+        sidebar.removeAttribute('tabindex');
+      }
+      function toggleOpen(){
+        if(sidebar.classList.contains('is-open')) close(); else open();
+      }
+
+      // Nur Mobile braucht JS (Desktop macht Hover per CSS)
+      if(isTouch()){
+        if(toggle){ toggle.addEventListener('click', toggleOpen); }
+        if(backdrop){ backdrop.addEventListener('click', close); }
+        document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+        // kleine Wischgeste zum Schließen
+        var startX=null;
+        sidebar.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
+        sidebar.addEventListener('touchmove', function(e){
+          if(startX==null) return;
+          var dx = e.touches[0].clientX - startX;
+          if(dx < -40){ close(); startX=null; }
+        }, {passive:true});
+      } else {
+        // Desktop: Toggle & Backdrop ausblenden
+        var t = document.querySelector('.sidebar-toggle');
+        var b = document.getElementById('sidebar-backdrop');
+        if(t){ t.style.display='none'; }
+        if(b){ b.style.display='none'; }
+      }
+    })();
   </script>
 </body>
 </html>

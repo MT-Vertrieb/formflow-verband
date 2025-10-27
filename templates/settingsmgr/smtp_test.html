@@ -1,12 +1,13 @@
-
+﻿
 {% extends "base.html" %}
 {% block content %}
 <div class="card" style="max-width:520px">
   <h3>SMTP-Test</h3>
   <form method="post">{% csrf_token %}
-    <label>Empfänger</label>
+    <label>EmpfÃ¤nger</label>
     <input type="email" name="to" style="width:100%;padding:8px;margin:6px 0" required>
     <button>Senden</button>
   </form>
 </div>
 {% endblock %}
+

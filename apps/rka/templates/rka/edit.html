@@ -1,0 +1,547 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<style>
+  #id_purpose{min-height:110px;padding:.5rem;}
+  .w-100{width:100%;}
+</style>
+
+<style>
+  /* Schlanke, nicht-volle Breiten */
+  .page-wrap { max-width: 1100px; margin: 0 auto; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .col { flex: 1 1 260px; min-width: 240px; }
+  .col-wide { flex: 1 1 520px; min-width: 420px; }
+  .card { background:#fff; padding:16px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; }
+  .muted { color:#666; font-size:0.92rem; }
+  .actions { display:flex; gap:10px; }
+  .text-right { text-align:right; }
+  input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
+    width: 100%; max-width: 520px;
+  }
+  textarea.purpose { min-height: 110px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border-bottom:1px solid #eee; padding:8px; vertical-align:top; }
+  tfoot td { font-weight:600; }
+  .totals-wrap { max-width:1100px; margin: 0 auto; }
+  .totals { background:#fafafa; border:1px solid #e5e5e5; border-radius:8px; padding:16px; }
+  .totals h4 { margin:0 0 8px 0; }
+  .right { text-align:right; }
+  .sep { margin: 10px 0; height:1px; background:#eee; }
+
+  /* Abrechnungs-Segmente: strikt zwei Spalten wie im „guten“ Stand */
+  .seg-card { border:1px solid #ddd; border-radius:10px; padding:14px; margin-bottom:12px; background:#fff; }
+  .seg-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .button { display:inline-block; padding:.45rem .8rem; border:1px solid #bbb; border-radius:8px; background:#f7f7f7; cursor:pointer; text-decoration:none; color:#111; }
+  .button-primary { background:#0d6efd; color:#fff; border-color:#0d6efd; }
+  .button-danger { background:#dc3545; color:#fff; border-color:#dc3545; }
+  .two-cols { display:grid; grid-template-columns: 1fr 1fr; gap:14px; align-items:flex-end; }
+  .dest-box { margin-top:.5rem; padding:.75rem; border:1px solid #ddd; border-radius:8px; }
+</style>
+
+<div class="page-wrap">
+
+  <!-- Kopfbereich: Genehmiger & Kostenstelle -->
+  <div class="card">
+    <h3>Reisekostenantrag</h3>
+    <p class="text-muted" style="margin-top:0.25rem;">Je Antrag kann nur eine Kostenstelle abgerechnet werden.</p>
+    <div class="row">
+      <div class="col">
+        <label for="{{ form.approver_function.id_for_label }}">1. Entscheider (Funktion)</label>
+        {{ form.approver_function }}
+      </div>
+      <div class="col">
+        <label for="{{ form.cost_center.id_for_label }}">Kostenstelle</label>
+        {{ form.cost_center }}
+      </div>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Reisedaten & Kilometer: MEHRERE vollständige Abrechnungen, je Segment streng zweispaltig -->
+    <div class="card">
+      <div class="seg-head">
+        <h4 style="margin:0;">Reisedaten &amp; Kilometer</h4>
+        <div>
+          <button type="button" id="add-seg" class="button">+ weitere Abrechnung</button>
+        </div>
+      </div>
+
+      <div id="segments">
+
+        <!-- SEGMENT 0 (einziger, der echte name-Attribute behält) -->
+        <div class="seg-card segment" data-index="0">
+
+          <!-- 1) Linke Spalte „Fahrt von“ / Rechte Spalte „Fahrt nach (3 Felder)“ -->
+          <div class="two-cols">
+            <div>
+              <label for="id_origin"><strong>Fahrt von</strong></label>
+              <input
+                type="text"
+                name="origin"
+                id="id_origin"
+                class="w-100"
+                placeholder="Straße, Hausnr., Ort"
+                value="{{ user.profile.street|default:'' }}{% if user.profile.house_number %} {{ user.profile.house_number }}{% endif %}{% if user.profile.city %}, {{ user.profile.city }}{% endif %}"
+              >
+            </div>
+
+            <div>
+              <label><strong>Fahrt nach</strong></label>
+              <div class="dest-box">
+                <label for="id_dest_name_0">Ziel
+                  <input type="text" id="id_dest_name_0" class="w-100" placeholder="z. B. Sportzentrum Musterstadt">
+                </label>
+                <label for="id_dest_street_0" style="margin-top:.4rem;">Straße
+                  <input type="text" id="id_dest_street_0" class="w-100" placeholder="z. B. Musterweg 12">
+                </label>
+                <label for="id_dest_city_0" style="margin-top:.4rem;">Ort
+                  <input type="text" id="id_dest_city_0" class="w-100" placeholder="PLZ Ort">
+                </label>
+                <!-- Hidden für das Model-Feld destination -->
+                <input type="hidden" name="destination" id="id_destination_hidden_0">
+              </div>
+            </div>
+          </div>
+
+          <!-- 2) Zeiten strikt links/rechts -->
+          <div class="two-cols" style="margin-top:10px;">
+            <div>
+              <label for="id_start_date">Start-Datum</label>
+              <input type="date" name="start_date" id="id_start_date" value="{{ form.start_date.value|default_if_none:'' }}" />
+              <label for="id_start_time" style="margin-top:.4rem;">Start-Zeit</label>
+              <input type="time" name="start_time" id="id_start_time" value="{{ form.start_time.value|default_if_none:'' }}" />
+            </div>
+            <div>
+              <label for="id_end_date">Ankunfts-Datum</label>
+              <input type="date" name="end_date" id="id_end_date" value="{{ form.end_date.value|default_if_none:'' }}" />
+              <label for="id_end_time" style="margin-top:.4rem;">Ankunfts-Zeit</label>
+              <input type="time" name="end_time" id="id_end_time" value="{{ form.end_time.value|default_if_none:'' }}" />
+            </div>
+          </div>
+
+          <!-- 3) Zweck der Reise (breit) -->
+          <div class="row" style="margin-top:10px;">
+            <div class="col-wide">
+              <label for="{{ form.purpose.id_for_label }}">Zweck der Reise</label>
+              {{ form.purpose }}
+            </div>
+          </div>
+
+          <!-- 4) Kilometer-Block: wieder streng links/rechts -->
+          <div class="two-cols" style="margin-top:12px;">
+            <div>
+              <label for="id_km_planned_0">Entfernung gem. Routenplaner (km)</label>
+              <input type="number" step="0.1" min="0" id="id_km_planned_0" class="seg-km-planned">
+
+              <label for="id_km_actual_0" style="margin-top:.5rem;">Tatsächliche Entfernung (km)</label>
+              <input type="number" step="0.1" min="0" id="id_km_actual_0" class="seg-km-actual">
+
+              <div style="margin-top:.6rem;">
+                <label><input type="checkbox" id="id_roundtrip_0" class="seg-roundtrip"> und zurück</label>
+              </div>
+
+              <div id="km_reason_wrap_0" style="display:none;margin-top:.4rem;">
+                <label for="id_km_reason_0">Begründung Mehrkilometer</label>
+                <input type="text" id="id_km_reason_0" class="w-100 seg-reason">
+              </div>
+            </div>
+
+            <div>
+              <label for="id_km_rate_0">Satz €/km (temporär)</label>
+              <input type="number" step="0.01" min="0" id="id_km_rate_0" value="0.35">
+              <div class="muted" id="km_info_0" style="margin-top:.5rem;"></div>
+              <div style="margin-top:.35rem;">
+                Segment-Summe (km): <strong><span id="km_total_amount_0">0,00</span> €</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Löschen-Button (Segment 0 versteckt) -->
+          <div class="row" style="margin-top:8px;">
+            <div class="col">
+              <button type="button" class="button button-danger seg-remove" style="display:none;">Segment löschen</button>
+            </div>
+          </div>
+        </div><!-- /segment 0 -->
+
+      </div><!-- /#segments -->
+
+      <!-- GESAMT-KM-SUMME ÜBER ALLE SEGMENTE -->
+      <div class="row" style="margin-top:6px;">
+        <div class="col">
+          <div class="muted">Gesamtpreis (alle km-Segmente): <strong><span id="km_total_amount_all">0,00</span> €</strong></div>
+        </div>
+      </div>
+    </div><!-- /Card Reisedaten & Kilometer -->
+
+    <!-- Weitere Kosten (Formset) -->
+    <div class="card">
+      <div class="row" style="align-items:center;">
+        <div class="col"><h4>Weitere Kosten</h4></div>
+        <div class="col right">
+          <button type="button" id="add-item" class="button">+ Position</button>
+        </div>
+      </div>
+
+      <!-- Management-Form (hidden reicht) -->
+      <div id="items-mf" style="display:none;">
+        {{ formset.management_form }}
+      </div>
+
+      <table id="items-table"
+             data-prefix="{{ formset.prefix }}-"
+             data-total="{{ formset.management_form.TOTAL_FORMS.value }}">
+        <thead>
+          <tr>
+            <th style="width:140px;">Belegdatum</th>
+            <th>Bezeichnung</th>
+            <th style="width:140px;" class="right">Betrag (€)</th>
+            <th style="width:90px;">Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in formset.forms %}
+          <tr class="item-row">
+            <td>{{ f.date }}</td>
+            <td>{{ f.description }}</td>
+            <td class="right">{{ f.amount }}</td>
+            <td>
+              {% if f.instance.pk %}
+                {{ f.DELETE }} <label>Löschen</label>
+              {% else %}
+                <button type="button" class="remove-row">Entfernen</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Formular-Aktionen -->
+    <div class="card">
+      <div class="actions">
+        <button type="submit" class="button button-primary">Speichern</button>
+        <a class="button" href="{% url 'rka_list' %}">Zur Übersicht</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Gesamtkosten separat, unterhalb des Formulars -->
+<div class="totals-wrap">
+  <div class="totals">
+    <h4>Gesamtkosten</h4>
+    <div class="row">
+      <div class="col">Summe weiterer Kosten</div>
+      <div class="col right"><span id="sum-expenses">0,00</span> €</div>
+    </div>
+    <div class="sep"></div>
+    <div class="row">
+      <div class="col"><strong>Gesamtsumme</strong></div>
+      <div class="col right"><strong><span id="sum-total">0,00</span> €</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- Items: Summierung & +Position -->
+<script>
+(function(){
+  function toNumber(val){
+    if(!val) return 0;
+    val = String(val).replace(/\./g, "").replace(",", ".");
+    var n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  }
+  function fmt(n){
+    return n.toLocaleString("de-DE", {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  var form  = document.querySelector('form[method="post"]');
+  var table = document.getElementById('items-table');
+  var tbody = table.querySelector('tbody');
+  var addBtn= document.getElementById('add-item');
+
+  function recalc(){
+    var sum = 0;
+    tbody.querySelectorAll('tr.item-row').forEach(function(tr){
+      var delCb = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if(delCb && delCb.checked) return;
+      var amt = tr.querySelector('input[name$="-amount"]');
+      if(amt) sum += toNumber(amt.value);
+    });
+    document.getElementById('sum-expenses').textContent = fmt(sum);
+
+    var kmEl = document.getElementById('km_total_amount_all');
+    var km = kmEl ? toNumber(kmEl.textContent) : 0;
+    document.getElementById('sum-total').textContent = fmt(sum + km);
+  }
+
+  function getPrefix(){
+    var p = table.getAttribute('data-prefix');
+    if(p) return p;
+    var mf = document.getElementById('items-mf');
+    if(mf){
+      var el = mf.querySelector('input[name$="TOTAL_FORMS"]');
+      if(el) return el.name.replace(/TOTAL_FORMS$/,'').replace(/-?$/,'-');
+    }
+    var any = tbody.querySelector('input[name*="-date"], input[name*="-description"], input[name*="-amount"]');
+    if(any && any.name){
+      var m = any.name.match(/^(.+?)-\d+-(?:date|description|amount)$/);
+      if(m) return m[1] + '-';
+    }
+    return null;
+  }
+
+  function getTotalEl(prefix){
+    if(!prefix) return null;
+    var sel = 'input[name="'+ prefix +'TOTAL_FORMS"]';
+    return (form && form.querySelector(sel)) || document.querySelector(sel);
+  }
+
+  function getNextIndex(prefix){
+    var totalEl = getTotalEl(prefix);
+    if(totalEl) return parseInt(totalEl.value, 10) || 0;
+    var maxIdx = -1;
+    tbody.querySelectorAll('input[name]').forEach(function(inp){
+      var m = inp.name && inp.name.match(new RegExp('^'+prefix.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&')+'(\\d+)-'));
+      if(m){ var i = parseInt(m[1],10); if(i>maxIdx) maxIdx=i; }
+    });
+    return maxIdx + 1;
+  }
+
+  function incTotalForms(prefix){
+    var totalEl = getTotalEl(prefix);
+    if(totalEl){ totalEl.value = (parseInt(totalEl.value,10)||0) + 1; }
+  }
+
+  // Erzeugt eine neue Tabellenzeile mit richtigen Inputs (Belegdatum, Bezeichnung, Betrag)
+  function buildRow(prefix, idx){
+    var tr = document.createElement('tr');
+    tr.className = 'item-row';
+
+    // Belegdatum
+    var tdDate = document.createElement('td');
+    var inDate = document.createElement('input');
+    inDate.type = 'date';
+    inDate.name = prefix + idx + '-date';
+    inDate.id   = 'id_' + inDate.name.replaceAll('-', '_');
+    tdDate.appendChild(inDate);
+
+    // Bezeichnung
+    var tdDesc = document.createElement('td');
+    var inDesc = document.createElement('input');
+    inDesc.type = 'text';
+    inDesc.name = prefix + idx + '-description';
+    inDesc.id   = 'id_' + inDesc.name.replaceAll('-', '_');
+    tdDesc.appendChild(inDesc);
+
+    // Betrag
+    var tdAmt = document.createElement('td');
+    tdAmt.className = 'right';
+    var inAmt = document.createElement('input');
+    inAmt.type = 'number';
+    inAmt.step = '0.01';
+    inAmt.min  = '0';
+    inAmt.name = prefix + idx + '-amount';
+    inAmt.id   = 'id_' + inAmt.name.replaceAll('-', '_');
+    tdAmt.appendChild(inAmt);
+
+    // Aktion
+    var tdAct = document.createElement('td');
+    var btnDel= document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'remove-row';
+    btnDel.textContent = 'Entfernen';
+    tdAct.appendChild(btnDel);
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdAmt);
+    tr.appendChild(tdAct);
+    return tr;
+  }
+
+  if(addBtn && tbody){
+    addBtn.addEventListener('click', function(){
+      var prefix = getPrefix();
+      if(!prefix) return;
+      var idx = getNextIndex(prefix);
+
+      var tr = buildRow(prefix, idx);
+      tbody.appendChild(tr);
+      incTotalForms(prefix);
+      recalc();
+    });
+
+    // Entfernen-Button (delegiert)
+    tbody.addEventListener('click', function(e){
+      if(!e.target.classList.contains('remove-row')) return;
+      var tr = e.target.closest('tr.item-row');
+      if(!tr) return;
+
+      // Falls serverseitige Zeilen mit DELETE-Checkbox existieren, zuerst versuchen diese zu setzen
+      var delCb = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if(delCb){
+        delCb.checked = true;
+        tr.style.display = 'none';
+      } else {
+        tr.remove();
+        // Optional: TOTAL_FORMS nicht dekrementieren – Django erwartet nur Zunahme; Entfernen ist ok
+      }
+      recalc();
+    });
+
+    // Summen-Update
+    tbody.addEventListener('input', function(e){
+      if(e.target && e.target.name && e.target.name.endsWith('-amount')) recalc();
+    });
+  }
+
+  // Initial
+  recalc();
+})();
+</script>
+
+<!-- Zweck-Feld optisch größer lassen -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var el = document.getElementById('id_purpose');
+  if(!el) return;
+  if(el.tagName.toLowerCase() === 'input'){
+    el.style.height = '110px';
+    el.style.lineHeight = '1.3';
+  }
+  if(el.tagName.toLowerCase() === 'textarea'){
+    el.setAttribute('rows', '6');
+  }
+});
+</script>
+
+<!-- Ziel zusammensetzen (Segment 0) -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  function build(){
+    var n = (document.getElementById('id_dest_name_0')||{}).value || '';
+    var s = (document.getElementById('id_dest_street_0')||{}).value || '';
+    var c = (document.getElementById('id_dest_city_0')||{}).value || '';
+    var parts = [n.trim(), s.trim(), c.trim()].filter(Boolean);
+    var hidden = document.getElementById('id_destination_hidden_0');
+    if (hidden) hidden.value = parts.join(', ');
+  }
+  ['id_dest_name_0','id_dest_street_0','id_dest_city_0'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el){ el.addEventListener('input', build); }
+  });
+});
+</script>
+
+<!-- SEGMENT-LOGIK: + Abrechnung hinzufügen / löschen & KM-Gesamtsumme -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  function num(v){ v=(v==null? "": String(v)).replace(",", "."); var n=parseFloat(v); return isFinite(n)?n:0; }
+  function fmt2(n){ return (isFinite(n)?n:0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function recalcAllKM(){
+    var totalAmount = 0;
+
+    document.querySelectorAll('.segment').forEach(function(seg){
+      var i = seg.getAttribute('data-index');
+
+      var rate  = num((seg.querySelector('#id_km_rate_'+i)||{}).value || "0.35");
+      var plan  = num((seg.querySelector('#id_km_planned_'+i)||{}).value || "0");
+      var act   = num((seg.querySelector('#id_km_actual_'+i) ||{}).value || "0");
+      var round = (seg.querySelector('#id_roundtrip_'+i)||{}).checked;
+
+      var km = act>0 ? act : plan;
+      if(round) km *= 2;
+
+      var segAmount = km * rate;
+      totalAmount += segAmount;
+
+      var need = (plan > 0 && act > 0 && Math.abs(act - plan)/plan*100 > 10);
+      var wrap = seg.querySelector('#km_reason_wrap_'+i);
+      if(wrap) wrap.style.display = need ? '' : 'none';
+
+      var info = 'Kilometergeld: ' + km.toFixed(1) + ' km × ' + rate.toFixed(2) + ' € = ' + segAmount.toFixed(2) + ' €';
+      var infoEl = seg.querySelector('#km_info_'+i);  if(infoEl) infoEl.textContent = info;
+      var outEl  = seg.querySelector('#km_total_amount_'+i); if(outEl) outEl.textContent = fmt2(segAmount);
+    });
+
+    var allEl = document.getElementById('km_total_amount_all');
+    if(allEl) allEl.textContent = fmt2(totalAmount);
+
+    var itemsSumEl = document.getElementById('sum-expenses');
+    var items = 0;
+    if(itemsSumEl){
+      var raw = itemsSumEl.textContent.replace(/\./g,'').replace(',','.');
+      items = parseFloat(raw) || 0;
+    }
+    var totalEl = document.getElementById('sum-total');
+    if(totalEl) totalEl.textContent = fmt2(items + totalAmount);
+  }
+
+  document.addEventListener('input', function(e){
+    var id = e.target && e.target.id;
+    if(!id) return;
+    if(/^(id_km_planned_|id_km_actual_|id_km_rate_)\d+$/.test(id)){ recalcAllKM(); }
+  }, true);
+  document.addEventListener('change', function(e){
+    var id = e.target && e.target.id;
+    if(!id) return;
+    if(/^id_roundtrip_\d+$/.test(id)){ recalcAllKM(); }
+  }, true);
+
+  var addBtn = document.getElementById('add-seg');
+  if(addBtn){
+    addBtn.addEventListener('click', function(){
+      var wrap = document.getElementById('segments');
+      var idx = wrap.querySelectorAll('.segment').length;
+
+      var base = wrap.querySelector('.segment[data-index="0"]');
+      var clone = base.cloneNode(true);
+      clone.setAttribute('data-index', String(idx));
+
+      clone.querySelectorAll('input, textarea').forEach(function(inp){
+        if(['text','date','time','number','hidden'].includes(inp.type)){ inp.value=''; }
+        if(inp.type === 'checkbox'){ inp.checked = false; }
+      });
+
+      clone.querySelectorAll('[id]').forEach(function(el){
+        el.id = el.id.replace(/_0$/, '_'+idx);
+        if(/^(id_origin|id_start_date|id_start_time|id_end_date|id_end_time|id_purpose)$/.test(el.id)){
+          el.id = el.id + '_' + idx;
+        }
+      });
+
+      // Namen entfernen & Felder deaktivieren (nur Segment 0 wird gespeichert)
+      clone.querySelectorAll('[name]').forEach(function(el){
+        el.setAttribute('data-name-original', el.getAttribute('name'));
+        el.removeAttribute('name');
+        el.disabled = true;
+      });
+
+      var rm = clone.querySelector('.seg-remove'); if(rm) rm.style.display = '';
+
+      wrap.appendChild(clone);
+      recalcAllKM();
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    if(e.target.classList.contains('seg-remove')){
+      var seg = e.target.closest('.segment');
+      if(!seg) return;
+      if(seg.getAttribute('data-index') === '0') return;
+      seg.remove();
+      recalcAllKM();
+    }
+  });
+
+  recalcAllKM();
+});
+</script>
+
+{% endblock %}

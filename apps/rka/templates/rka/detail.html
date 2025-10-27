@@ -1,92 +1,17 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
-<div class="card">
-  <h3>Reisekostenantrag #{{ tr.id }}</h3>
-  <p><strong>Status:</strong> {{ tr.get_status_display }}</p>
-
-  <h4>Genehmigungsreihenfolge</h4>
-  <ol>
-    {% for f in sequence %}
-      <li>
-        {{ f.name }}
-        {% if current_fn and f.id == current_fn.id %}
-          <span class="muted">(aktuell am Zug)</span>
-        {% endif %}
-      </li>
-    {% endfor %}
-  </ol>
-
-  <h4>Protokoll</h4>
-  {% if events %}
+  <div class="card">
+    <h3>Reisekostenantrag #{{ tr.id }}</h3>
     <ul>
-      {% for e in events %}
-        <li>
-          <strong>Step {{ e.step_number }}</strong> – {{ e.function.name }}:
-          {{ e.get_decision_display }} ({{ e.created_at|date:"d.m.Y H:i" }})
-          {% if e.comment %}<br><em>Kommentar:</em> {{ e.comment }}{% endif %}
-          {% if e.ip_address %}<br><em>IP:</em> {{ e.ip_address }}{% endif %}
-        </li>
-      {% endfor %}
+      <li>Von: {{ tr.origin }} → Nach: {{ tr.destination }}</li>
+      <li>Zweck: {{ tr.purpose }}</li>
+      <li>Start: {{ tr.start_date }} {{ tr.start_time }}</li>
+      <li>Ende: {{ tr.end_date }} {{ tr.end_time }}</li>
+      <li>Status: {{ tr.status }}</li>
     </ul>
-  {% else %}
-    <p class="muted">Noch keine Einträge.</p>
-  {% endif %}
-
-  {% if tr.status == "IN_REVIEW" or tr.status == "RETURNED" %}
-    {% if current_fn %}
-      <hr style="margin:12px 0;">
-      <h4>Aktion für: {{ current_fn.name }}</h4>
-      <form method="post" action="{% url 'rka_act' tr.id 'APPROVE' %}" style="display:inline;">
-        {% csrf_token %}
-        <input type="text" name="comment" placeholder="Kommentar (optional)" />
-        <button type="submit">Genehmigen</button>
-      </form>
-      <form method="post" action="{% url 'rka_act' tr.id 'RETURN' %}" style="display:inline;margin-left:8px;">
-        {% csrf_token %}
-        <input type="text" name="comment" placeholder="Kommentar (optional)" />
-        <button type="submit">Zurückgeben</button>
-      </form>
-      <form method="post" action="{% url 'rka_act' tr.id 'REJECT' %}" style="display:inline;margin-left:8px;">
-        {% csrf_token %}
-        <input type="text" name="comment" placeholder="Kommentar (optional)" />
-        <button type="submit">Ablehnen</button>
-      </form>
-    {% else %}
-      <p class="muted">Kein weiterer Schritt offen.</p>
-    {% endif %}
-  {% endif %}
-
-  <hr style="margin:12px 0;">
-  <h4>Ablage-E-Mail(s) (final):</h4>
-  {% if archive_to and archive_to|length > 0 %}
-    <ul>
-      {% for m in archive_to %}
-        <li>{{ m }}</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted">Keine Ablage-Empfänger konfiguriert.</p>
-  {% endif %}
-
-  {% if final_preview %}
-    <hr style="margin:12px 0;">
-    <h4>Vorschau Abschlussmail (Simulation)</h4>
-    <p><strong>Betreff:</strong><br>{{ final_preview.subject }}</p>
-    <p><strong>Text:</strong><br><pre style="white-space:pre-wrap;margin:0">{{ final_preview.body }}</pre></p>
-    <p><strong>Empfänger:</strong>
-      {% if final_preview.recipients and final_preview.recipients|length > 0 %}
-        {{ final_preview.recipients|join:", " }}
-      {% else %}
-        <span class="muted">– keine konfiguriert –</span>
-      {% endif %}
-    </p>
-  {% endif %}
-
-  {% if tr.status == "APPROVED" %}
-    <div style="margin-top:12px;">
-      <a class="btn" href="{% url 'rka_finalize_preview' tr.id %}">Abschlussmail (Simulation) anzeigen</a>
-      <a class="btn" href="{% url 'rka_final_pdf' tr.id %}" style="margin-left:8px;">Finale PDF herunterladen</a>
-    </div>
-  {% endif %}
-</div>
+    <p><a href="{% url 'rka_new' %}">Neuen Antrag erfassen</a></p>
+  </div>
 {% endblock %}
+
+
+

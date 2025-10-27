@@ -1,84 +1,134 @@
 from django.db import models
-from django.conf import settings
-from apps.iam.models import Function
-from apps.settingsmgr.models import ModuleApprovalConfig
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class TravelRequest(models.Model):
-    STATUS = [
+    STATUS_CHOICES = [
         ("DRAFT", "Entwurf"),
-        ("IN_REVIEW", "Im Genehmigungsprozess"),
-        ("RETURNED", "Zur Korrektur zurückgegeben"),
-        ("APPROVED", "Final genehmigt"),
+        ("IN_REVIEW", "In Prüfung"),
+        ("APPROVED", "Genehmigt"),
         ("REJECTED", "Abgelehnt"),
+        ("RETURNED", "Zurückgegeben"),
     ]
 
-    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    step1_function = models.ForeignKey(
-        Function,
-        on_delete=models.PROTECT,
-        help_text="Entscheider Nr. 1 (vom Antragsteller gewählt)",
-    )
-    status = models.CharField(max_length=16, choices=STATUS, default="IN_REVIEW")
+    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="travel_requests")
+    destination_city = models.CharField(max_length=255, blank=True, default='')
+    destination_street = models.CharField(max_length=255, blank=True, default='')
+    destination_label = models.CharField(max_length=255, blank=True, default='')
+    origin = models.CharField("Start (Ort)", max_length=200)
+    destination = models.CharField("Ziel (Ort)", max_length=200)
+    start_date = models.DateField("Abfahrt (Datum)")
+    start_time = models.TimeField("Abfahrt (Zeit)", null=True, blank=True)
+    end_date = models.DateField("Rückkehr (Datum)")
+    end_time = models.TimeField("Rückkehr (Zeit)", null=True, blank=True)
+    purpose = models.TextField("Reisezweck", blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="DRAFT")
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"RKA #{self.pk} von {self.applicant}"
-
-    # --- Sequenz-Logik (Schritt 1 + feste Steps 2–5 aus Settings) ---
-    def approval_sequence(self):
-        cfg = ModuleApprovalConfig.objects.filter(module="RKA", is_active=True).first()
-        if not cfg:
-            return [self.step1_function]
-        return cfg.step_functions(self.step1_function)
-
-    def current_step_number(self) -> int:
-        """Nächster zu bearbeitender Schritt: Anzahl bereits protokollierter 'APPROVE'-Schritte + 1."""
-        # Wir zählen nur tatsächlich genehmigte Schritte als erledigt.
-        done = self.events.filter(decision="APPROVE").count()
-        return done + 1
-
-    def current_function(self):
-        """Welche Funktion ist jetzt am Zug? None, wenn fertig oder nicht im Prozess."""
-        if self.status not in ("IN_REVIEW", "RETURNED"):
-            return None
-        seq = self.approval_sequence()
-        idx = self.current_step_number() - 1  # 0-basiert
-        return seq[idx] if 0 <= idx < len(seq) else None
-
-    def is_final_approval_after_next(self) -> bool:
-        """True, wenn der nächste APPROVE die Kette abschließt."""
-        seq = self.approval_sequence()
-        return self.current_step_number() >= len(seq)
-
-    def finalize_if_complete(self):
-        """Aufrufen nach einem APPROVE: wenn alles durch, Status setzen."""
-        if self.is_final_approval_after_next():
-            self.status = "APPROVED"
-            self.save()
+        return f"RKA #{self.pk} – {self.applicant} – {self.origin} → {self.destination}"
 
 
-class ApprovalEvent(models.Model):
-    DECISION = [
-        ("APPROVE", "Genehmigt"),
-        ("RETURN", "Zur Korrektur zurückgegeben"),
-        ("REJECT", "Abgelehnt"),
-    ]
-
-    request = models.ForeignKey(TravelRequest, related_name="events", on_delete=models.CASCADE)
-    step_number = models.PositiveIntegerField(help_text="1..n entsprechend der Reihenfolge")
-    function = models.ForeignKey(Function, on_delete=models.PROTECT)
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    decision = models.CharField(max_length=10, choices=DECISION)
-    comment = models.TextField(blank=True, default="")
-    ip_address = models.CharField(max_length=64, blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["created_at"]
+class ExpenseItem(models.Model):
+    travel_request = models.ForeignKey(TravelRequest, on_delete=models.CASCADE, related_name="items")
+    date = models.DateField("Datum")
+    description = models.CharField("Beschreibung", max_length=255)
+    amount = models.DecimalField("Betrag (€)", max_digits=9, decimal_places=2)
 
     def __str__(self):
-        return f"RKA #{self.request_id} – Step {self.step_number}: {self.get_decision_display()}"
+        return f"{self.date} – {self.description} – {self.amount} €"
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+# Hinweis:
+# - Genehmiger = beliebiger Benutzer aus dem AUTH_USER_MODEL (Dropdown)
+# - Kostenstelle = FK auf finance.CostCenter (existiert bereits)
+# - Status bleibt simpel; der "echte" Genehmigungsprozess kommt später wieder drauf
+
+class TravelRequest(models.Model):
+    STATUS_CHOICES = [
+        ("draft", "Entwurf"),
+        ("submitted", "Eingereicht"),
+        ("approved", "Genehmigt"),
+        ("rejected", "Abgelehnt"),
+    ]
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    applicant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="rka_requests",
+    )
+    approver_function = models.ForeignKey('iam.Function', on_delete=models.PROTECT, null=True, blank=True, related_name='rka_first_level')
+    # Kostenstelle (aus finance-App)
+    cost_center = models.ForeignKey('finance.CostCenter', on_delete=models.PROTECT, null=True, blank=True)
+    # Reisedaten
+    origin = models.CharField("Startort", max_length=255)
+    destination = models.CharField("Zielort", max_length=255)
+    purpose = models.CharField("Zweck der Reise", max_length=255)
+
+    start_date = models.DateField("Startdatum")
+    start_time = models.TimeField("Startzeit")
+    end_date = models.DateField("Enddatum")
+    end_time = models.TimeField("Endzeit")
+
+    # Kilometer-spezifisch (nur Eingaben + Validierungsgrundlage)
+    km_planned = models.PositiveIntegerField(
+        "Geplante km (Routenplaner)", default=0, help_text="Ergebnis aus Routenplaner."
+    )
+    km_claimed = models.PositiveIntegerField(
+        "Beantragte km", default=0, help_text="Vom Antragssteller eingetragene km."
+    )
+    km_deviation_reason = models.TextField(
+        "Begründung Mehrkilometer",
+        blank=True,
+        help_text="Pflicht, falls Abweichung > Toleranz.",
+    )
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"RKA #{self.pk or 'neu'} – {self.applicant}"
+
+    @property
+    def total_items(self):
+        return sum((it.amount or 0) for it in self.items.all())
+
+    @property
+    def total(self):
+        # reine Summe der Positionen; Kilometergeld als eigene Position hinzufügen
+        return self.total_items
+
+
+def receipt_upload_to(instance, filename):
+    return f"rka_receipts/{instance.travel_request_id}/{filename}"
+
+
+class ExpenseItem(models.Model):
+    travel_request = models.ForeignKey(
+        TravelRequest, on_delete=models.CASCADE, related_name="items"
+    )
+    date = models.DateField("Datum")
+    description = models.CharField("Beschreibung", max_length=255)
+    amount = models.DecimalField("Betrag (EUR)", max_digits=10, decimal_places=2)
+    receipt = models.FileField(
+        "Beleg (PDF/JPG)", upload_to=receipt_upload_to, blank=True, null=True
+    )
+
+    class Meta:
+        ordering = ["date", "id"]
+
+    def __str__(self):
+        return f"{self.date} – {self.description} ({self.amount} €)"

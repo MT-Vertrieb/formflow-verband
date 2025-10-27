@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <div class="card">
-  <h3>Haushaltsplan – Übersicht</h3>
+  <h3>Haushaltsplan â€“ Ãœbersicht</h3>
 
   <form method="get" style="margin:8px 0;">
     <label>Jahr:&nbsp;</label>
@@ -19,23 +19,24 @@
       {% for cc in centers %}
         <div style="margin-top:12px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fff">
           <div style="font-weight:600;">
-            Kostenstelle (KS): {{ cc.code }} – {{ cc.name }}
+            Kostenstelle (KS): {{ cc.code }} â€“ {{ cc.name }}
           </div>
           <div class="muted" style="font-size:12px;margin-top:2px">
             Zugeordnete Kostencluster (Cluster):
           </div>
           <ul style="margin:6px 0 0 16px;">
             {% for cl in cc.clusters.all %}
-              <li>Cluster {{ cl.code }} – {{ cl.name }} <span class="muted">(KS {{ cc.code }})</span></li>
+              <li>Cluster {{ cl.code }} â€“ {{ cl.name }} <span class="muted">(KS {{ cc.code }})</span></li>
             {% empty %}
-              <li class="muted">Keine Cluster für diese Kostenstelle im Jahr {{ selected_year }}</li>
+              <li class="muted">Keine Cluster fÃ¼r diese Kostenstelle im Jahr {{ selected_year }}</li>
             {% endfor %}
           </ul>
         </div>
       {% endfor %}
     {% else %}
-      <p class="muted">Für das Jahr {{ selected_year }} sind keine Kostenstellen vorhanden.</p>
+      <p class="muted">FÃ¼r das Jahr {{ selected_year }} sind keine Kostenstellen vorhanden.</p>
     {% endif %}
   {% endif %}
 </div>
 {% endblock %}
+

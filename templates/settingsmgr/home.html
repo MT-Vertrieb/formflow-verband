@@ -1,4 +1,4 @@
-
+﻿
 {% extends "base.html" %}
 {% block content %}
 <h2>Einstellungen</h2>
@@ -32,21 +32,22 @@
   </form>
 </div>
 <div class="card" style="margin-top:12px">
-  <h3>Kilometersätze</h3>
+  <h3>KilometersÃ¤tze</h3>
   <form method="post" style="display:flex;gap:12px;align-items:flex-end">{% csrf_token %}
     {{ rate_form.km_from.label_tag }} {{ rate_form.km_from }}
     {{ rate_form.km_to.label_tag }} {{ rate_form.km_to }}
     {{ rate_form.rate.label_tag }} {{ rate_form.rate }}
-    <button name="add_rate">Hinzufügen</button>
+    <button name="add_rate">HinzufÃ¼gen</button>
   </form>
-  <ul>{% for r in rates %}<li>{{ r.km_from }}–{{ r.km_to|default:"∞" }} km → {{ r.rate }} €</li>{% empty %}<li class="muted">Keine Einträge</li>{% endfor %}</ul>
+  <ul>{% for r in rates %}<li>{{ r.km_from }}â€“{{ r.km_to|default:"âˆž" }} km â†’ {{ r.rate }} â‚¬</li>{% empty %}<li class="muted">Keine EintrÃ¤ge</li>{% endfor %}</ul>
 </div>
 <div class="card" style="margin-top:12px">
   <h3>Haushaltsjahre</h3>
   <form method="post" style="display:flex;gap:12px;align-items:flex-end">{% csrf_token %}
     {{ year_form.year.label_tag }} {{ year_form.year }}
-    <button name="add_year">Hinzufügen</button>
+    <button name="add_year">HinzufÃ¼gen</button>
   </form>
   <ul>{% for y in years %}<li>{{ y.year }}</li>{% empty %}<li class="muted">Keine Jahre angelegt</li>{% endfor %}</ul>
 </div>
 {% endblock %}
+

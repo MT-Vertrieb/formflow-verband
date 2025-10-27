@@ -1,10 +1,8 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("new/", views.new_request, name="rka_new"),
-    path("detail/<int:pk>/", views.detail, name="rka_detail"),
-    path("act/<int:pk>/<str:action>/", views.act_on_request, name="rka_act"),
-    path("finalize/<int:pk>/", views.finalize_preview, name="rka_finalize_preview"),
-    path("final-pdf/<int:pk>/", views.download_final_pdf, name="rka_final_pdf"),
+    path("new/", views.rka_new, name="rka_new"),
+    path("edit/<int:pk>/", views.rka_edit, name="rka_edit"),
+    path("", views.rka_list, name="rka_list"),
 ]

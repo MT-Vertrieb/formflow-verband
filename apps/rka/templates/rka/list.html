@@ -1,0 +1,40 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>Reisekostenantr?ge ? ?bersicht</h3>
+  <p><a class="button" href="{% url 'rka_new' %}">Neuen Antrag erfassen</a></p>
+  {% if requests %}
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Erstellt am</th>
+        <th>Von</th>
+        <th>Nach</th>
+        <th>Zweck</th>
+        <th>Status</th>
+        <th>Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tr in requests %}
+      <tr>
+        <td>#{{ tr.id }}</td>
+        <td>{{ tr.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ tr.origin }}</td>
+        <td>{{ tr.destination }}</td>
+        <td>{{ tr.purpose }}</td>
+        <td>{{ tr.status }}</td>
+        <td><a href="{% url 'rka_edit' tr.id %}">?ffnen</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>Keine Antr?ge vorhanden.</p>
+  {% endif %}
+  <p style="margin-top:1rem;"><a href="{% url 'rka_new' %}">Neuen Antrag erfassen</a></p>
+</div>
+{% endblock %}
+
+

@@ -1,25 +1,19 @@
 from django.contrib import admin
-from .models import TravelRequest, ApprovalEvent
+from .models import TravelRequest, ExpenseItem
 
-
-class ApprovalEventInline(admin.TabularInline):
-    model = ApprovalEvent
+class ExpenseItemInline(admin.TabularInline):
+    model = ExpenseItem
     extra = 0
-    readonly_fields = ("step_number", "function", "actor", "decision", "comment", "ip_address", "created_at")
-    can_delete = False
-
 
 @admin.register(TravelRequest)
 class TravelRequestAdmin(admin.ModelAdmin):
-    list_display = ("id", "applicant", "step1_function", "status", "created_at")
-    list_filter = ("status", "step1_function")
-    search_fields = ("applicant__username", "applicant__email")
-    inlines = [ApprovalEventInline]
+    list_display = ("id", "applicant", "origin", "destination", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("id", "applicant__email", "origin", "destination")
+    inlines = [ExpenseItemInline]
 
-
-@admin.register(ApprovalEvent)
-class ApprovalEventAdmin(admin.ModelAdmin):
-    list_display = ("request", "step_number", "function", "actor", "decision", "created_at")
-    list_filter = ("decision", "function")
-    search_fields = ("request__id", "actor__username", "actor__email")
-    readonly_fields = ("created_at",)
+@admin.register(ExpenseItem)
+class ExpenseItemAdmin(admin.ModelAdmin):
+    list_display = ("id", "travel_request", "date", "description", "amount")
+    list_filter = ("date",)
+    search_fields = ("description",)
