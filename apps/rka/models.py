@@ -1,56 +1,9 @@
-from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-class TravelRequest(models.Model):
-    STATUS_CHOICES = [
-        ("DRAFT", "Entwurf"),
-        ("IN_REVIEW", "In Prüfung"),
-        ("APPROVED", "Genehmigt"),
-        ("REJECTED", "Abgelehnt"),
-        ("RETURNED", "Zurückgegeben"),
-    ]
-
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="travel_requests")
-    destination_city = models.CharField(max_length=255, blank=True, default='')
-    destination_street = models.CharField(max_length=255, blank=True, default='')
-    destination_label = models.CharField(max_length=255, blank=True, default='')
-    origin = models.CharField("Start (Ort)", max_length=200)
-    destination = models.CharField("Ziel (Ort)", max_length=200)
-    start_date = models.DateField("Abfahrt (Datum)")
-    start_time = models.TimeField("Abfahrt (Zeit)", null=True, blank=True)
-    end_date = models.DateField("Rückkehr (Datum)")
-    end_time = models.TimeField("Rückkehr (Zeit)", null=True, blank=True)
-    purpose = models.TextField("Reisezweck", blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="DRAFT")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"RKA #{self.pk} – {self.applicant} – {self.origin} → {self.destination}"
-
-
-class ExpenseItem(models.Model):
-    travel_request = models.ForeignKey(TravelRequest, on_delete=models.CASCADE, related_name="items")
-    date = models.DateField("Datum")
-    description = models.CharField("Beschreibung", max_length=255)
-    amount = models.DecimalField("Betrag (€)", max_digits=9, decimal_places=2)
-
-    def __str__(self):
-        return f"{self.date} – {self.description} – {self.amount} €"
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-# Hinweis:
-# - Genehmiger = beliebiger Benutzer aus dem AUTH_USER_MODEL (Dropdown)
-# - Kostenstelle = FK auf finance.CostCenter (existiert bereits)
-# - Status bleibt simpel; der "echte" Genehmigungsprozess kommt später wieder drauf
+def receipt_upload_to(instance, filename):
+    return f"rka_receipts/{instance.travel_request_id}/{filename}"
 
 class TravelRequest(models.Model):
     STATUS_CHOICES = [
@@ -58,6 +11,7 @@ class TravelRequest(models.Model):
         ("submitted", "Eingereicht"),
         ("approved", "Genehmigt"),
         ("rejected", "Abgelehnt"),
+        ("returned", "Zurückgegeben"),
     ]
 
     created_at = models.DateTimeField(default=timezone.now)
@@ -68,20 +22,31 @@ class TravelRequest(models.Model):
         on_delete=models.PROTECT,
         related_name="rka_requests",
     )
-    approver_function = models.ForeignKey('iam.Function', on_delete=models.PROTECT, null=True, blank=True, related_name='rka_first_level')
-    # Kostenstelle (aus finance-App)
-    cost_center = models.ForeignKey('finance.CostCenter', on_delete=models.PROTECT, null=True, blank=True)
-    # Reisedaten
+
+    approver_function = models.ForeignKey(
+        'iam.Function',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='rka_first_level'
+    )
+
+    cost_center = models.ForeignKey(
+        'finance.CostCenter',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
     origin = models.CharField("Startort", max_length=255)
     destination = models.CharField("Zielort", max_length=255)
-    purpose = models.CharField("Zweck der Reise", max_length=255)
+    purpose = models.CharField("Zweck der Reise", max_length=255, blank=True, default="")
 
     start_date = models.DateField("Startdatum")
-    start_time = models.TimeField("Startzeit")
+    start_time = models.TimeField("Startzeit", null=True, blank=True)
     end_date = models.DateField("Enddatum")
-    end_time = models.TimeField("Endzeit")
+    end_time = models.TimeField("Endzeit", null=True, blank=True)
 
-    # Kilometer-spezifisch (nur Eingaben + Validierungsgrundlage)
     km_planned = models.PositiveIntegerField(
         "Geplante km (Routenplaner)", default=0, help_text="Ergebnis aus Routenplaner."
     )
@@ -93,6 +58,10 @@ class TravelRequest(models.Model):
         blank=True,
         help_text="Pflicht, falls Abweichung > Toleranz.",
     )
+
+    destination_city = models.CharField(max_length=255, blank=True, default='')
+    destination_street = models.CharField(max_length=255, blank=True, default='')
+    destination_label = models.CharField(max_length=255, blank=True, default='')
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
 
@@ -108,13 +77,7 @@ class TravelRequest(models.Model):
 
     @property
     def total(self):
-        # reine Summe der Positionen; Kilometergeld als eigene Position hinzufügen
         return self.total_items
-
-
-def receipt_upload_to(instance, filename):
-    return f"rka_receipts/{instance.travel_request_id}/{filename}"
-
 
 class ExpenseItem(models.Model):
     travel_request = models.ForeignKey(

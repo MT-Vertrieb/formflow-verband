@@ -6,14 +6,13 @@
 </style>
 
 <style>
-  /* Schlanke, nicht-volle Breiten */
   .page-wrap { max-width: 1100px; margin: 0 auto; }
   .row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
   .col { flex: 1 1 260px; min-width: 240px; }
   .col-wide { flex: 1 1 520px; min-width: 420px; }
   .card { background:#fff; padding:16px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; }
   .muted { color:#666; font-size:0.92rem; }
-  .actions { display:flex; gap:10px; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; }
   .text-right { text-align:right; }
   input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
     width: 100%; max-width: 520px;
@@ -27,8 +26,6 @@
   .totals h4 { margin:0 0 8px 0; }
   .right { text-align:right; }
   .sep { margin: 10px 0; height:1px; background:#eee; }
-
-  /* Abrechnungs-Segmente: strikt zwei Spalten wie im „guten“ Stand */
   .seg-card { border:1px solid #ddd; border-radius:10px; padding:14px; margin-bottom:12px; background:#fff; }
   .seg-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
   .button { display:inline-block; padding:.45rem .8rem; border:1px solid #bbb; border-radius:8px; background:#f7f7f7; cursor:pointer; text-decoration:none; color:#111; }
@@ -36,30 +33,32 @@
   .button-danger { background:#dc3545; color:#fff; border-color:#dc3545; }
   .two-cols { display:grid; grid-template-columns: 1fr 1fr; gap:14px; align-items:flex-end; }
   .dest-box { margin-top:.5rem; padding:.75rem; border:1px solid #ddd; border-radius:8px; }
+  .sig-box { border:1px dashed #bbb; border-radius:8px; padding:10px; background:#fafafa; }
+  .sig-actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
 </style>
 
 <div class="page-wrap">
 
-  <!-- Kopfbereich: Genehmiger & Kostenstelle -->
-  <div class="card">
-    <h3>Reisekostenantrag</h3>
-    <p class="text-muted" style="margin-top:0.25rem;">Je Antrag kann nur eine Kostenstelle abgerechnet werden.</p>
-    <div class="row">
-      <div class="col">
-        <label for="{{ form.approver_function.id_for_label }}">1. Entscheider (Funktion)</label>
-        {{ form.approver_function }}
-      </div>
-      <div class="col">
-        <label for="{{ form.cost_center.id_for_label }}">Kostenstelle</label>
-        {{ form.cost_center }}
-      </div>
-    </div>
-  </div>
-
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <!-- Reisedaten & Kilometer: MEHRERE vollständige Abrechnungen, je Segment streng zweispaltig -->
+    <!-- Kopfbereich -->
+    <div class="card">
+      <h3>Reisekostenantrag</h3>
+      <p class="text-muted" style="margin-top:0.25rem;">Je Antrag kann nur eine Kostenstelle abgerechnet werden.</p>
+      <div class="row">
+        <div class="col">
+          <label for="{{ form.approver_function.id_for_label }}">1. Entscheider (Funktion)</label>
+          {{ form.approver_function }}
+        </div>
+        <div class="col">
+          <label for="{{ form.cost_center.id_for_label }}">Kostenstelle</label>
+          {{ form.cost_center }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Reisedaten & Kilometer -->
     <div class="card">
       <div class="seg-head">
         <h4 style="margin:0;">Reisedaten &amp; Kilometer</h4>
@@ -69,11 +68,7 @@
       </div>
 
       <div id="segments">
-
-        <!-- SEGMENT 0 (einziger, der echte name-Attribute behält) -->
         <div class="seg-card segment" data-index="0">
-
-          <!-- 1) Linke Spalte „Fahrt von“ / Rechte Spalte „Fahrt nach (3 Felder)“ -->
           <div class="two-cols">
             <div>
               <label for="id_origin"><strong>Fahrt von</strong></label>
@@ -83,7 +78,7 @@
                 id="id_origin"
                 class="w-100"
                 placeholder="Straße, Hausnr., Ort"
-                value="{{ user.profile.street|default:'' }}{% if user.profile.house_number %} {{ user.profile.house_number }}{% endif %}{% if user.profile.city %}, {{ user.profile.city }}{% endif %}"
+                value="{{ form.initial.origin|default:'' }}"
               >
             </div>
 
@@ -91,37 +86,34 @@
               <label><strong>Fahrt nach</strong></label>
               <div class="dest-box">
                 <label for="id_dest_name_0">Ziel
-                  <input type="text" id="id_dest_name_0" class="w-100" placeholder="z. B. Sportzentrum Musterstadt">
+                  <input type="text" id="id_dest_name_0" class="w-100" placeholder="z. B. Sportzentrum Musterstadt" value="{{ form.initial.destination_label|default:'' }}">
                 </label>
                 <label for="id_dest_street_0" style="margin-top:.4rem;">Straße
-                  <input type="text" id="id_dest_street_0" class="w-100" placeholder="z. B. Musterweg 12">
+                  <input type="text" id="id_dest_street_0" class="w-100" placeholder="z. B. Musterweg 12" value="{{ form.initial.destination_street|default:'' }}">
                 </label>
                 <label for="id_dest_city_0" style="margin-top:.4rem;">Ort
-                  <input type="text" id="id_dest_city_0" class="w-100" placeholder="PLZ Ort">
+                  <input type="text" id="id_dest_city_0" class="w-100" placeholder="PLZ Ort" value="{{ form.initial.destination_city|default:'' }}">
                 </label>
-                <!-- Hidden für das Model-Feld destination -->
-                <input type="hidden" name="destination" id="id_destination_hidden_0">
+                <input type="hidden" name="destination" id="id_destination_hidden_0" value="{{ form.instance.destination|default:'' }}">
               </div>
             </div>
           </div>
 
-          <!-- 2) Zeiten strikt links/rechts -->
           <div class="two-cols" style="margin-top:10px;">
             <div>
               <label for="id_start_date">Start-Datum</label>
-              <input type="date" name="start_date" id="id_start_date" value="{{ form.start_date.value|default_if_none:'' }}" />
+              <input type="date" name="start_date" id="id_start_date" value="{{ form.instance.start_date|date:'Y-m-d' }}" />
               <label for="id_start_time" style="margin-top:.4rem;">Start-Zeit</label>
-              <input type="time" name="start_time" id="id_start_time" value="{{ form.start_time.value|default_if_none:'' }}" />
+              <input type="time" name="start_time" id="id_start_time" value="{{ form.instance.start_time|time:'H:i' }}" />
             </div>
             <div>
               <label for="id_end_date">Ankunfts-Datum</label>
-              <input type="date" name="end_date" id="id_end_date" value="{{ form.end_date.value|default_if_none:'' }}" />
+              <input type="date" name="end_date" id="id_end_date" value="{{ form.instance.end_date|date:'Y-m-d' }}" />
               <label for="id_end_time" style="margin-top:.4rem;">Ankunfts-Zeit</label>
-              <input type="time" name="end_time" id="id_end_time" value="{{ form.end_time.value|default_if_none:'' }}" />
+              <input type="time" name="end_time" id="id_end_time" value="{{ form.instance.end_time|time:'H:i' }}" />
             </div>
           </div>
 
-          <!-- 3) Zweck der Reise (breit) -->
           <div class="row" style="margin-top:10px;">
             <div class="col-wide">
               <label for="{{ form.purpose.id_for_label }}">Zweck der Reise</label>
@@ -129,19 +121,15 @@
             </div>
           </div>
 
-          <!-- 4) Kilometer-Block: wieder streng links/rechts -->
           <div class="two-cols" style="margin-top:12px;">
             <div>
               <label for="id_km_planned_0">Entfernung gem. Routenplaner (km)</label>
               <input type="number" step="0.1" min="0" id="id_km_planned_0" class="seg-km-planned">
-
               <label for="id_km_actual_0" style="margin-top:.5rem;">Tatsächliche Entfernung (km)</label>
               <input type="number" step="0.1" min="0" id="id_km_actual_0" class="seg-km-actual">
-
               <div style="margin-top:.6rem;">
                 <label><input type="checkbox" id="id_roundtrip_0" class="seg-roundtrip"> und zurück</label>
               </div>
-
               <div id="km_reason_wrap_0" style="display:none;margin-top:.4rem;">
                 <label for="id_km_reason_0">Begründung Mehrkilometer</label>
                 <input type="text" id="id_km_reason_0" class="w-100 seg-reason">
@@ -158,23 +146,20 @@
             </div>
           </div>
 
-          <!-- Löschen-Button (Segment 0 versteckt) -->
           <div class="row" style="margin-top:8px;">
             <div class="col">
               <button type="button" class="button button-danger seg-remove" style="display:none;">Segment löschen</button>
             </div>
           </div>
-        </div><!-- /segment 0 -->
+        </div>
+      </div>
 
-      </div><!-- /#segments -->
-
-      <!-- GESAMT-KM-SUMME ÜBER ALLE SEGMENTE -->
       <div class="row" style="margin-top:6px;">
         <div class="col">
           <div class="muted">Gesamtpreis (alle km-Segmente): <strong><span id="km_total_amount_all">0,00</span> €</strong></div>
         </div>
       </div>
-    </div><!-- /Card Reisedaten & Kilometer -->
+    </div>
 
     <!-- Weitere Kosten (Formset) -->
     <div class="card">
@@ -185,7 +170,6 @@
         </div>
       </div>
 
-      <!-- Management-Form (hidden reicht) -->
       <div id="items-mf" style="display:none;">
         {{ formset.management_form }}
       </div>
@@ -220,17 +204,60 @@
       </table>
     </div>
 
+    <!-- Unterschrift -->
+    <div class="card">
+      <h4 style="margin-top:0;">Unterschrift</h4>
+      <div class="sig-box">
+        <canvas id="sig_pad" width="520" height="160" style="background:#fff;border:1px solid #ddd;border-radius:6px;"></canvas>
+        <div class="sig-actions">
+          <input type="hidden" name="signature_dataurl" id="signature_dataurl">
+          <label>oder Name in Druckschrift:
+            <input type="text" name="signature_name" id="signature_name" class="w-100" placeholder="Max Mustermann">
+          </label>
+          <button type="button" id="sig_clear" class="button">Löschen</button>
+          <button type="button" id="sig_apply" class="button">Übernehmen</button>
+        </div>
+        <div class="muted" style="margin-top:.4rem;">Demo-Feld – Speicherung der PNG/DataURL serverseitig ist noch nicht implementiert.</div>
+      </div>
+    </div>
+
     <!-- Formular-Aktionen -->
     <div class="card">
       <div class="actions">
-        <button type="submit" class="button button-primary">Speichern</button>
+        <button type="submit" name="action" value="save" class="button button-primary">Speichern</button>
+        <button type="submit" name="action" value="submit" class="button">Absenden</button>
         <a class="button" href="{% url 'rka_list' %}">Zur Übersicht</a>
       </div>
     </div>
+
+    <!-- Demo: Genehmigungsbereich (sichtbar zu Demo-Zwecken) -->
+    <div class="card">
+      <h4 style="margin-top:0;">(Demo) Genehmigung</h4>
+      <div class="row">
+        <div class="col">
+          <label><input type="checkbox" name="is_factually_correct_demo"> sachlich richtig</label>
+        </div>
+        <div class="col">
+          <label><input type="checkbox" name="is_mathematically_correct_demo"> rechnerisch richtig</label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="col-wide">
+          <label for="approver_comment_demo">Bemerkungen</label>
+          <textarea id="approver_comment_demo" name="approver_comment_demo" rows="4" class="w-100" placeholder="Hinweise des Entscheiders"></textarea>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:10px;">
+        <button type="button" class="button">Weiterleiten</button>
+        <button type="button" class="button">zur Korrektur</button>
+        <button type="button" class="button button-danger">ablehnen</button>
+      </div>
+      <div class="muted" style="margin-top:.4rem;">Nur Demo. Die echten Workflows hängen wir später wieder an.</div>
+    </div>
+
   </form>
 </div>
 
-<!-- Gesamtkosten separat, unterhalb des Formulars -->
 <div class="totals-wrap">
   <div class="totals">
     <h4>Gesamtkosten</h4>
@@ -246,7 +273,6 @@
   </div>
 </div>
 
-<!-- Items: Summierung & +Position -->
 <script>
 (function(){
   function toNumber(val){
@@ -317,12 +343,10 @@
     if(totalEl){ totalEl.value = (parseInt(totalEl.value,10)||0) + 1; }
   }
 
-  // Erzeugt eine neue Tabellenzeile mit richtigen Inputs (Belegdatum, Bezeichnung, Betrag)
   function buildRow(prefix, idx){
     var tr = document.createElement('tr');
     tr.className = 'item-row';
 
-    // Belegdatum
     var tdDate = document.createElement('td');
     var inDate = document.createElement('input');
     inDate.type = 'date';
@@ -330,7 +354,6 @@
     inDate.id   = 'id_' + inDate.name.replaceAll('-', '_');
     tdDate.appendChild(inDate);
 
-    // Bezeichnung
     var tdDesc = document.createElement('td');
     var inDesc = document.createElement('input');
     inDesc.type = 'text';
@@ -338,7 +361,6 @@
     inDesc.id   = 'id_' + inDesc.name.replaceAll('-', '_');
     tdDesc.appendChild(inDesc);
 
-    // Betrag
     var tdAmt = document.createElement('td');
     tdAmt.className = 'right';
     var inAmt = document.createElement('input');
@@ -349,7 +371,6 @@
     inAmt.id   = 'id_' + inAmt.name.replaceAll('-', '_');
     tdAmt.appendChild(inAmt);
 
-    // Aktion
     var tdAct = document.createElement('td');
     var btnDel= document.createElement('button');
     btnDel.type = 'button';
@@ -369,43 +390,35 @@
       var prefix = getPrefix();
       if(!prefix) return;
       var idx = getNextIndex(prefix);
-
       var tr = buildRow(prefix, idx);
       tbody.appendChild(tr);
       incTotalForms(prefix);
       recalc();
     });
 
-    // Entfernen-Button (delegiert)
     tbody.addEventListener('click', function(e){
       if(!e.target.classList.contains('remove-row')) return;
       var tr = e.target.closest('tr.item-row');
       if(!tr) return;
-
-      // Falls serverseitige Zeilen mit DELETE-Checkbox existieren, zuerst versuchen diese zu setzen
       var delCb = tr.querySelector('input[type="checkbox"][name$="-DELETE"]');
       if(delCb){
         delCb.checked = true;
         tr.style.display = 'none';
       } else {
         tr.remove();
-        // Optional: TOTAL_FORMS nicht dekrementieren – Django erwartet nur Zunahme; Entfernen ist ok
       }
       recalc();
     });
 
-    // Summen-Update
     tbody.addEventListener('input', function(e){
       if(e.target && e.target.name && e.target.name.endsWith('-amount')) recalc();
     });
   }
 
-  // Initial
   recalc();
 })();
 </script>
 
-<!-- Zweck-Feld optisch größer lassen -->
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   var el = document.getElementById('id_purpose');
@@ -420,7 +433,6 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
-<!-- Ziel zusammensetzen (Segment 0) -->
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   function build(){
@@ -438,7 +450,6 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
-<!-- SEGMENT-LOGIK: + Abrechnung hinzufügen / löschen & KM-Gesamtsumme -->
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   function num(v){ v=(v==null? "": String(v)).replace(",", "."); var n=parseFloat(v); return isFinite(n)?n:0; }
@@ -465,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function(){
       var wrap = seg.querySelector('#km_reason_wrap_'+i);
       if(wrap) wrap.style.display = need ? '' : 'none';
 
-      var info = 'Kilometergeld: ' + km.toFixed(1) + ' km × ' + rate.toFixed(2) + ' € = ' + segAmount.toFixed(2) + ' €';
+      var info = 'Kilometergeld: ' + (isFinite(km)?km.toFixed(1):'0.0') + ' km × ' + rate.toFixed(2) + ' € = ' + segAmount.toFixed(2) + ' €';
       var infoEl = seg.querySelector('#km_info_'+i);  if(infoEl) infoEl.textContent = info;
       var outEl  = seg.querySelector('#km_total_amount_'+i); if(outEl) outEl.textContent = fmt2(segAmount);
     });
@@ -516,7 +527,6 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       });
 
-      // Namen entfernen & Felder deaktivieren (nur Segment 0 wird gespeichert)
       clone.querySelectorAll('[name]').forEach(function(el){
         el.setAttribute('data-name-original', el.getAttribute('name'));
         el.removeAttribute('name');
@@ -542,6 +552,42 @@ document.addEventListener('DOMContentLoaded', function(){
 
   recalcAllKM();
 });
+</script>
+
+<script>
+(function(){
+  var cvs = document.getElementById('sig_pad');
+  var clearBtn = document.getElementById('sig_clear');
+  var applyBtn = document.getElementById('sig_apply');
+  var out = document.getElementById('signature_dataurl');
+  if(!cvs || !cvs.getContext) return;
+  var ctx = cvs.getContext('2d');
+  var drawing = false, prev=null;
+
+  function pos(e){
+    var r = cvs.getBoundingClientRect();
+    var x = (e.touches? e.touches[0].clientX : e.clientX) - r.left;
+    var y = (e.touches? e.touches[0].clientY : e.clientY) - r.top;
+    return {x, y};
+  }
+  function start(e){ drawing=true; prev=pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return;
+    var p = pos(e);
+    ctx.lineWidth = 2; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    prev=p; e.preventDefault();
+  }
+  function end(e){ drawing=false; e.preventDefault(); }
+  cvs.addEventListener('mousedown', start); cvs.addEventListener('mousemove', move);
+  cvs.addEventListener('mouseup', end); cvs.addEventListener('mouseleave', end);
+  cvs.addEventListener('touchstart', start, {passive:false});
+  cvs.addEventListener('touchmove', move, {passive:false});
+  cvs.addEventListener('touchend', end, {passive:false});
+
+  if(clearBtn){ clearBtn.addEventListener('click', function(){ ctx.clearRect(0,0,cvs.width,cvs.height); }); }
+  if(applyBtn){ applyBtn.addEventListener('click', function(){ out.value = cvs.toDataURL('image/png'); }); }
+})();
 </script>
 
 {% endblock %}

@@ -1,30 +1,33 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block content %}
 <div class="page-wrap" style="max-width:1100px;margin:0 auto;">
   <div class="card" style="background:#fff;padding:16px;border:1px solid #ddd;border-radius:8px;margin-bottom:16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h3 style="margin:0;">Reisekostenanträge</h3>
-      <a href="{% url 'rka_new' %}" class="button" style="padding:.45rem .8rem;border:1px solid #bbb;border-radius:8px;background:#f7f7f7;color:#111;text-decoration:none;">+ Neuer Antrag</a>
+      <h3 style="margin:0;">Belegprüfungen</h3>
+      <a href="{% url 'invoicecheck:new' %}" class="button" style="padding:.45rem .8rem;border:1px solid #bbb;border-radius:8px;background:#f7f7f7;color:#111;text-decoration:none;">+ Neuer Antrag</a>
     </div>
+
     <table style="width:100%;border-collapse:collapse;margin-top:12px;">
       <thead>
         <tr>
           <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Nr.</th>
           <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Antragsteller</th>
-          <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Von → Nach</th>
+          <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Rechnung</th>
           <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Status</th>
           <th style="text-align:left;border-bottom:1px solid #eee;padding:8px;">Aktion</th>
         </tr>
       </thead>
       <tbody>
-        {% for r in requests %}
+        {% for c in checks %}
         <tr>
-          <td style="border-bottom:1px solid #eee;padding:8px;">#{{ r.id }}</td>
-          <td style="border-bottom:1px solid #eee;padding:8px;">{{ r.applicant }}</td>
-          <td style="border-bottom:1px solid #eee;padding:8px;">{{ r.origin }} → {{ r.destination }}</td>
-          <td style="border-bottom:1px solid #eee;padding:8px;">{{ r.get_status_display }}</td>
+          <td style="border-bottom:1px solid #eee;padding:8px;">#{{ c.id }}</td>
+          <td style="border-bottom:1px solid #eee;padding:8px;">{{ c.applicant }}</td>
           <td style="border-bottom:1px solid #eee;padding:8px;">
-            <a href="{% url 'rka_edit' r.id %}" class="button" style="padding:.3rem .6rem;border:1px solid #bbb;border-radius:8px;background:#f7f7f7;color:#111;text-decoration:none;">Bearbeiten</a>
+            {{ c.supplier }} – {{ c.invoice_date|date:"d.m.Y" }} – {{ c.total_amount|floatformat:2 }} €
+          </td>
+          <td style="border-bottom:1px solid #eee;padding:8px;">{{ c.get_status_display }}</td>
+          <td style="border-bottom:1px solid #eee;padding:8px;">
+            <a href="{% url 'invoicecheck:edit' c.id %}" class="button" style="padding:.3rem .6rem;border:1px solid #bbb;border-radius:8px;background:#f7f7f7;color:#111;text-decoration:none;">Bearbeiten</a>
           </td>
         </tr>
         {% empty %}

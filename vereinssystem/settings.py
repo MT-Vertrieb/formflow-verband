@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import environ, dj_database_url, os
 
@@ -29,6 +28,9 @@ INSTALLED_APPS = [
     'apps.calendarapp',
     'apps.resources',
     'apps.work',
+    # neu:
+    'apps.refunds',
+    'apps.invoicecheck',
 ]
 
 MIDDLEWARE = [

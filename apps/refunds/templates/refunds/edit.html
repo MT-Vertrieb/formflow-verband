@@ -1,0 +1,254 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<style>
+  .page-wrap { max-width: 1100px; margin: 0 auto; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .col { flex: 1 1 260px; min-width: 240px; }
+  .col-wide { flex: 1 1 520px; min-width: 420px; }
+  .card { background:#fff; padding:16px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; }
+  .muted { color:#666; font-size:0.92rem; }
+  .actions { display:flex; gap:10px; }
+  .right { text-align:right; }
+  input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
+    width: 100%; max-width: 520px;
+  }
+  textarea { min-height: 110px; }
+  .sep { margin: 10px 0; height:1px; background:#eee; }
+  .sig-wrap { border:1px dashed #aaa; border-radius:8px; padding:10px; background:#fafafa; }
+  .sig-canvas { width:100%; max-width:520px; height:160px; border:1px solid #ddd; border-radius:6px; background:#fff; display:block; }
+  .sig-actions { margin-top:8px; display:flex; gap:8px; }
+</style>
+
+<div class="page-wrap">
+
+  <!-- Kopfbereich: Entscheider & Kostenstelle -->
+  <div class="card">
+    <h3>Erstattung von Beträgen</h3>
+    <p class="muted" style="margin-top:.25rem;">Je Antrag kann nur eine Kostenstelle abgerechnet werden.</p>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col">
+          <label for="{{ form.approver_function.id_for_label }}">1. Entscheider (Funktion)</label>
+          {{ form.approver_function }}
+        </div>
+        <div class="col">
+          <label for="{{ form.cost_center.id_for_label }}">Kostenstelle</label>
+          {{ form.cost_center }}
+        </div>
+      </div>
+  </div>
+
+  <!-- Antrags-Details -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Angaben zur Erstattung</h4>
+    <div class="row">
+      <div class="col">
+        <label for="{{ form.receipt_date.id_for_label }}">Beleg vom</label>
+        {{ form.receipt_date }}
+      </div>
+      <div class="col">
+        <label for="{{ form.amount.id_for_label }}">Betrag</label>
+        {{ form.amount }}
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label for="{{ form.title.id_for_label }}">Bezeichnung</label>
+        {{ form.title }}
+      </div>
+      <div class="col">
+        <!-- Leer-spacer für symmetrischen Look -->
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col-wide">
+        <label for="{{ form.reason.id_for_label }}">Begründung</label>
+        {{ form.reason }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Unterschrift -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Unterschrift</h4>
+    <div class="sig-wrap">
+      <canvas id="signature-pad" class="sig-canvas"></canvas>
+      <div class="sig-actions">
+        <button type="button" id="sig-clear" class="button">Zurücksetzen</button>
+        <button type="button" id="sig-text" class="button">Name als Text setzen</button>
+      </div>
+      <input type="hidden" name="signature_data" id="id_signature_data" />
+    </div>
+  </div>
+
+  <!-- Aktionen -->
+  <div class="card">
+    <div class="actions">
+      <button type="submit" name="save_draft" class="button button-primary" style="background:#0d6efd;color:#fff;border-color:#0d6efd;">Speichern</button>
+      <button type="submit" name="submit_request" class="button">Absenden</button>
+      <a class="button" href="{% url 'refunds:list' %}">Zur Übersicht</a>
+    </div>
+  </div>
+
+  <!-- Demo-Bereich: Genehmigung -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Demo: Genehmigung</h4>
+
+    <!-- NEU: Cluster-Auswahl – gehört in den Genehmigungsbereich -->
+    <div class="row">
+      <div class="col">
+        <label for="id_cost_cluster">Cluster (abhängig von Kostenstelle)</label>
+        <select id="id_cost_cluster" name="cost_cluster">
+          <option value="">— bitte Kostenstelle wählen —</option>
+        </select>
+        <div class="muted" id="cluster-hint" style="margin-top:.35rem;">
+          Die verfügbaren Cluster richten sich nach der ausgewählten Kostenstelle.
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label><input type="checkbox" name="sig_sachlich" /> sachlich richtig</label>
+      </div>
+      <div class="col">
+        <label><input type="checkbox" name="sig_rechnerisch" /> rechnerisch richtig</label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col-wide">
+        <label for="id_review_remarks">Bemerkungen</label>
+        <textarea id="id_review_remarks" rows="4" style="width:100%;"></textarea>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:10px;">
+      <button type="button" class="button">Weiterleiten</button>
+      <button type="button" class="button">zur Korrektur</button>
+      <button type="button" class="button button-danger" style="background:#dc3545;border-color:#dc3545;color:#fff;">ablehnen</button>
+    </div>
+  </div>
+
+  </form>
+</div>
+
+<script>
+(function(){
+  /** ===== Signature Pad (einfach) ===== */
+  var canvas = document.getElementById('signature-pad');
+  var hidden = document.getElementById('id_signature_data');
+  if(canvas && hidden){
+    var ctx = canvas.getContext('2d');
+    var drawing = false, last = null;
+
+    function sizeCanvas(){
+      // einfache DPI-Anpassung
+      var ratio = window.devicePixelRatio || 1;
+      var w = canvas.clientWidth, h = canvas.clientHeight;
+      canvas.width = Math.floor(w * ratio);
+      canvas.height = Math.floor(h * ratio);
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#111';
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,w,h);
+    }
+    sizeCanvas();
+    window.addEventListener('resize', sizeCanvas);
+
+    function pos(e){
+      if(e.touches && e.touches.length){ e = e.touches[0]; }
+      var r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+    function start(e){ drawing = true; last = pos(e); e.preventDefault(); }
+    function move(e){
+      if(!drawing) return;
+      var p = pos(e);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+      e.preventDefault();
+      hidden.value = canvas.toDataURL('image/png');
+    }
+    function end(){ drawing = false; last = null; hidden.value = canvas.toDataURL('image/png'); }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+
+    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchmove',  move,  {passive:false});
+    canvas.addEventListener('touchend',   end);
+
+    var btnClear = document.getElementById('sig-clear');
+    var btnText  = document.getElementById('sig-text');
+    if(btnClear){
+      btnClear.addEventListener('click', function(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        sizeCanvas();
+        hidden.value = '';
+      });
+    }
+    if(btnText){
+      btnText.addEventListener('click', function(){
+        var name = prompt("Bitte Namen eingeben (wird als Text-Signatur gesetzt):");
+        if(!name) return;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        sizeCanvas();
+        ctx.fillStyle = '#111';
+        ctx.font = '24px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+        ctx.fillText(name, 16, 48);
+        hidden.value = canvas.toDataURL('image/png');
+      });
+    }
+  }
+
+  /** ===== Cluster-Auswahl dynamisch nach Kostenstelle ===== */
+  var CLUSTERS_BY_CC = {};
+  try {
+    CLUSTERS_BY_CC = JSON.parse('{{ clusters_by_cc_json|default:"{}"|safe }}') || {};
+  } catch (e) {
+    CLUSTERS_BY_CC = {};
+  }
+
+  var ccSelect = document.getElementById('{{ form.cost_center.auto_id }}');
+  var clSelect = document.getElementById('id_cost_cluster');
+
+  function fillClustersFor(ccId){
+    if(!clSelect) return;
+    while(clSelect.firstChild){ clSelect.removeChild(clSelect.firstChild); }
+    var opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = '— bitte Kostenstelle wählen —';
+    clSelect.appendChild(opt0);
+
+    var list = CLUSTERS_BY_CC[String(ccId)] || [];
+    list.forEach(function(c){
+      var o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.name;
+      clSelect.appendChild(o);
+    });
+  }
+
+  if(ccSelect){
+    fillClustersFor(ccSelect.value);
+    ccSelect.addEventListener('change', function(){
+      fillClustersFor(this.value);
+    });
+  }
+})();
+</script>
+
+{% endblock %}

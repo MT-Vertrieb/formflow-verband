@@ -1,0 +1,186 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<style>
+  .page-wrap { max-width: 1100px; margin: 0 auto; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .col { flex: 1 1 260px; min-width: 240px; }
+  .col-wide { flex: 1 1 520px; min-width: 420px; }
+  .card { background:#fff; padding:16px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; }
+  .muted { color:#666; font-size:0.92rem; }
+  .actions { display:flex; gap:10px; }
+  input[type="text"], input[type="date"], input[type="time"], input[type="number"], input[type="url"], select, textarea {
+    width: 100%; max-width: 520px;
+  }
+  textarea { min-height: 110px; }
+  .sep { margin: 10px 0; height:1px; background:#eee; }
+</style>
+
+<div class="page-wrap">
+
+  <!-- Kopfbereich: Entscheider & Kostenstelle -->
+  <div class="card">
+    <h3>Belegprüfung</h3>
+    <p class="muted" style="margin-top:.25rem;">Je Antrag kann nur eine Kostenstelle geprüft werden.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="row">
+        <div class="col">
+          <label for="{{ form.approver_function.id_for_label }}">1. Entscheider (Funktion)</label>
+          {{ form.approver_function }}
+        </div>
+        <div class="col">
+          <label for="{{ form.cost_center.id_for_label }}">Kostenstelle</label>
+          {{ form.cost_center }}
+        </div>
+      </div>
+  </div>
+
+  <!-- Rechnungsdaten -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Rechnungsdaten</h4>
+    <div class="row">
+      <div class="col">
+        <label for="{{ form.supplier.id_for_label }}">Rechnungssteller</label>
+        {{ form.supplier }}
+      </div>
+      <div class="col">
+        <label for="{{ form.invoice_date.id_for_label }}">Rechnung vom</label>
+        {{ form.invoice_date }}
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label for="{{ form.total_amount.id_for_label }}">Gesamtbetrag (€)</label>
+        {{ form.total_amount }}
+      </div>
+      <div class="col"><!-- spacer --></div>
+    </div>
+  </div>
+
+  <!-- Beleganzeige (PDF) -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Beleganzeige (PDF)</h4>
+    <p class="muted" style="margin-top:.25rem;">Füge den SharePoint-Link zur gespeicherten Rechnung ein.</p>
+    <div class="row">
+      <div class="col-wide">
+        <label for="{{ form.pdf_link.id_for_label }}">PDF-Link (SharePoint)</label>
+        {{ form.pdf_link }}
+      </div>
+    </div>
+
+    {% if form.pdf_link.value %}
+      <div class="sep"></div>
+      <iframe
+        src="{{ form.pdf_link.value }}"
+        width="100%"
+        height="600"
+        style="margin-top:8px;border:1px solid #ccc;border-radius:6px;background:#fff;"
+      ></iframe>
+    {% endif %}
+  </div>
+
+  <!-- Genehmigung (Demo) -->
+  <div class="card">
+    <h4 style="margin:0 0 10px 0;">Demo: Genehmigung</h4>
+
+    <!-- Cluster-Auswahl – abhängig von Kostenstelle -->
+    <div class="row">
+      <div class="col">
+        <label for="{{ form.cost_cluster.id_for_label }}">Cluster (abhängig von Kostenstelle)</label>
+        {{ form.cost_cluster }}
+        <div class="muted" id="cluster-hint" style="margin-top:.35rem;">
+          Die verfügbaren Cluster richten sich nach der ausgewählten Kostenstelle.
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col">
+        <label for="{{ form.is_factually_correct.id_for_label }}">
+          {{ form.is_factually_correct }} sachlich richtig
+        </label>
+      </div>
+      <div class="col">
+        <label for="{{ form.is_mathematically_correct.id_for_label }}">
+          {{ form.is_mathematically_correct }} rechnerisch richtig
+        </label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div class="col-wide">
+        <label for="{{ form.remarks.id_for_label }}">Bemerkungen</label>
+        {{ form.remarks }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Aktionen -->
+  <div class="card">
+    <div class="actions">
+      <button type="submit" name="action" value="save" class="button button-primary" style="background:#0d6efd;color:#fff;border-color:#0d6efd;">Speichern</button>
+      <button type="submit" name="action" value="submit" class="button">Absenden</button>
+      <a class="button" href="{% url 'invoicecheck:list' %}">Zur Übersicht</a>
+    </div>
+  </div>
+
+  </form>
+</div>
+
+<!-- Dynamische Cluster-Ladung per Endpoint -->
+<script>
+(function(){
+  function setOptions(selectEl, items, selectedId){
+    while (selectEl.firstChild) selectEl.removeChild(selectEl.firstChild);
+    var ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = '— bitte wählen —';
+    selectEl.appendChild(ph);
+
+    (items || []).forEach(function(it){
+      var opt = document.createElement('option');
+      opt.value = String(it.id);
+      opt.textContent = it.label || ('Cluster ' + it.id);
+      if (selectedId && String(selectedId) === String(it.id)) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.disabled = !items || items.length === 0;
+  }
+
+  window.updateClusters = function(costCenterId){
+    var ccId = costCenterId || '';
+    var clusterSelect = document.getElementById('id_cost_cluster');
+    if (!clusterSelect) return;
+
+    if (!ccId){
+      setOptions(clusterSelect, [], null);
+      return;
+    }
+
+    var url = "{% url 'invoicecheck:clusters' %}" + "?cc=" + encodeURIComponent(ccId);
+    fetch(url, {credentials: 'same-origin'})
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(data){
+        var items = (data && data.results) ? data.results : [];
+        setOptions(clusterSelect, items, clusterSelect.value);
+      })
+      .catch(function(){
+        setOptions(clusterSelect, [], null);
+      });
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var ccSelect = document.getElementById('id_cost_center');
+    var clusterSelect = document.getElementById('id_cost_cluster');
+    if (clusterSelect) clusterSelect.disabled = true;
+    if (ccSelect){
+      if (ccSelect.value){ updateClusters(ccSelect.value); }
+      ccSelect.addEventListener('change', function(e){ updateClusters(e.target.value); });
+    }
+  });
+})();
+</script>
+
+{% endblock %}

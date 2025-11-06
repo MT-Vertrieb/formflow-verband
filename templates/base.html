@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}Intranet{% endblock %}</title>
+  <title>{% block title %}FormFlow-Verband Thüringer Handball-Verband{% endblock %}</title>
   {% load static %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -60,6 +60,13 @@
       padding:.3rem .3rem 1rem;
       overflow-y:auto; overflow-x:hidden;
       scrollbar-width:thin;
+    }
+    .nav-section{
+      color:var(--sb-fg-dim);
+      font-size:.8rem;
+      margin:.6rem .9rem .25rem;
+      white-space:nowrap;
+      opacity:.9;
     }
     .nav-item{
       display:flex; align-items:center; gap:.9rem;
@@ -132,78 +139,94 @@
   <aside id="sidebar" class="sidebar" role="navigation" aria-label="Hauptmenü">
     <div class="brand">
       <span class="logo" aria-hidden="true"></span>
-      <span class="title">Intranet</span>
+      <span class="title">FormFlow THV</span>
     </div>
 
     <nav>
+      <div class="nav-section">Allgemein</div>
+
       <!-- Dashboard -->
-      <a class="nav-item" href="">
+      <a class="nav-item" href="/">
         <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
         </svg>
         <span class="label">Dashboard</span>
       </a>
 
-      <!-- Persönlicher Bereich -->
-      <a class="nav-item" href="/accounts/profile/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/>
-        </svg>
-        <span class="label">Persönlicher Bereich</span>
-      </a>
-
-      <!-- Haushaltsplan -->
-      <a class="nav-item" href="/finance/overview/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M3 5h18v4H3V5zm0 6h18v8H3v-8zm2 2v4h14v-4H5z"/>
-        </svg>
-        <span class="label">Haushaltsplan</span>
-      </a>
-
       <!-- Reisekostenantrag (Test) -->
       <a class="nav-item" href="/rka/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M4 4h16v2H4V4zm0 6h16v2H4v-2zm0 6h10v2H4v-2z"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l4 4-8 8-4-4 8-8zm-6 14h12v2H6v-2z"/>
         </svg>
         <span class="label">Reisekostenantrag (Test)</span>
       </a>
 
-      <!-- CSV-Import (Haushaltsplan) -->
-      <a class="nav-item" href="/finance/import/">
+      <!-- Erstattung von Beträgen -->
+      <a class="nav-item" href="/refunds/">
         <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M19 7v4H5V7H3v10h18V7h-2zM7 5h10v2H7zM9 13h6v2H9z"/>
+          <path d="M12 5v3H4v8h8v3l7-7-7-7z"/>
+        </svg>
+        <span class="label">Erstattung von Beträgen</span>
+      </a>
+
+      <!-- Belegprüfung -->
+      <a class="nav-item" href="/invoicecheck/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M7 3h10a2 2 0 0 1 2 2v11l-5 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm6 14h3l-3 3v-3zM8 7h8v2H8V7zm0 4h8v2H8v-2z"/>
+        </svg>
+        <span class="label">Belegprüfung</span>
+      </a>
+
+      <!-- Haushaltsplan -->
+      <a class="nav-item" href="/finance/haushaltsplan/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 4h16v2H4V4zm0 6h16v2H4v-2zm0 6h10v2H4v-2z"/>
+        </svg>
+        <span class="label">Haushaltsplan</span>
+      </a>
+
+      <!-- Persönlicher Bereich -->
+      <a class="nav-item" href="/accounts/profile/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/></svg>
+        <span class="label">Persönlicher Bereich</span>
+      </a>
+
+      <!-- CSV-Import (Haushaltsplan) -->
+      <a class="nav-item" href="/finance/haushaltsplan/import/">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 20h14v-2H5v2z"/>
         </svg>
         <span class="label">CSV-Import (Haushaltsplan)</span>
       </a>
 
       <!-- SMTP-Test -->
       <a class="nav-item" href="/settingsmgr/smtp-test/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M2 4h20v16H2V4zm2 2v2l8 5 8-5V6H4z"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 4H4c-1.1 0-2 .9-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/>
         </svg>
         <span class="label">SMTP-Test</span>
       </a>
 
       <!-- Einstellungen -->
       <a class="nav-item" href="/settingsmgr/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M19.14 12.94a7.96 7.96 0 0 0 .06-1 7.96 7.96 0 0 0-.06-1l2.03-1.58-1.92-3.32-2.39.96a8.1 8.1 0 0 0-1.73-1l-.36-2.54H9.23l-.36 2.54c-.6.23-1.18.55-1.72.95l-2.4-.95L2.83 9.36 4.86 10.94a7.96 7.96 0 0 0-.06 1c0 .34.02.67.06 1l-2.03 1.58 1.92 3.32 2.39-.96c.54.4 1.12.73 1.72.96l.36 2.54h5.38l.36-2.54c.6-.23 1.18-.55 1.72-.95l2.4.95 1.92-3.32-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.14 12.94a7.002 7.002 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.66l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.007 7.007 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.22-1.12.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.82a.5.5 0 0 0 .12.66l2.03 1.58c-.05.31-.08.63-.08.94s.03.63.08.94L2.83 14.5a.5.5 0 0 0-.12.66l1.92 3.32c.14.24.44.34.7.22l2.39-.96c.5.41 1.05.73 1.63.94l.36 2.54c.06.25.27.42.5.42h3.84c.24 0 .45-.17.5-.42l.36-2.54c.58-.22 1.12-.53 1.63-.94l2.39.96c.26.12.56.02.7-.22l1.92-3.32a.5.5 0 0 0-.12-.66l-2.03-1.56zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"/>
         </svg>
         <span class="label">⚙️ Einstellungen</span>
       </a>
 
       <!-- Admin -->
       <a class="nav-item" href="/admin/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4.18L18.09 7 12 9.82 5.91 7 12 5.18z"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/>
         </svg>
         <span class="label">🔐 Admin</span>
       </a>
 
       <!-- Logout -->
       <a class="nav-item" href="/accounts/logout/">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M10 17v-2h4v-2h-4V9l-5 4 5 4zm9 4H11v-2h8V5h-8V3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/>
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3h-8v2h8v14h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
         </svg>
         <span class="label">🚪 Logout</span>
       </a>
@@ -241,12 +264,10 @@
         if(sidebar.classList.contains('is-open')) close(); else open();
       }
 
-      // Nur Mobile braucht JS (Desktop macht Hover per CSS)
       if(isTouch()){
         if(toggle){ toggle.addEventListener('click', toggleOpen); }
         if(backdrop){ backdrop.addEventListener('click', close); }
         document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
-        // kleine Wischgeste zum Schließen
         var startX=null;
         sidebar.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
         sidebar.addEventListener('touchmove', function(e){
@@ -255,11 +276,8 @@
           if(dx < -40){ close(); startX=null; }
         }, {passive:true});
       } else {
-        // Desktop: Toggle & Backdrop ausblenden
-        var t = document.querySelector('.sidebar-toggle');
-        var b = document.getElementById('sidebar-backdrop');
-        if(t){ t.style.display='none'; }
-        if(b){ b.style.display='none'; }
+        if(toggle){ toggle.style.display='none'; }
+        if(backdrop){ backdrop.style.display='none'; }
       }
     })();
   </script>
